@@ -8,6 +8,9 @@ using BrokenEvent.ProxyDiscovery.Interfaces;
 
 namespace BrokenEvent.ProxyDiscovery
 {
+  /// <summary>
+  /// Performs proxy list update and availability checks.
+  /// </summary>
   public sealed class ProxyDiscovery
   {
     private List<ProxyState> proxies;
@@ -42,7 +45,22 @@ namespace BrokenEvent.ProxyDiscovery
     }
 
     /// <summary>
-    /// Updates the proxy discovery.
+    /// Gets a single proxy and removes it from list.
+    /// </summary>
+    /// <returns>Proxy information or <c>null</c> if the list is empty.</returns>
+    public ProxyInformation PopProxy()
+    {
+      if (proxies.Count == 0)
+        return null;
+
+      ProxyState state = proxies[0];
+      proxies.RemoveAt(0);
+
+      return state.Proxy;
+    }
+
+    /// <summary>
+    /// Updates the proxy discovery and gets fresh proxies list.
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     /// <param name="maxResults">Maximum number of working proxies to return. Default is 0 which means no limits.</param>
