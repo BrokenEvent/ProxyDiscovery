@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>BrokenEvent</Authors>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/BrokenEvent/ILStrip.git</RepositoryUrl>
+    <PackageTags>proxy</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <Description>ihuihuih</Description>
+    <Copyright>©2021 Broken Event. All rights reserved.</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Checkers\ProxyChecker.cs" />
+    <Compile Include="Filters\ExcludeLocationFilter.cs" />
+    <Compile Include="Filters\GooglePassedFilter.cs" />
+    <Compile Include="Filters\HttpsFilter.cs" />
+    <Compile Include="Filters\IncludeLocationFilter.cs" />
+    <Compile Include="Filters\LocationBaseFilter.cs" />
+    <Compile Include="Filters\PortFilter.cs" />
+    <Compile Include="Helpers\StringHelpers.cs" />
+    <Compile Include="Helpers\TaskQueue.cs" />
+    <Compile Include="Interfaces\IProxyChecker.cs" />
+    <Compile Include="Interfaces\IProxyFilter.cs" />
+    <Compile Include="Interfaces\IProxyListParser.cs" />
+    <Compile Include="Interfaces\IProxyListProvider.cs" />
+    <Compile Include="Interfaces\IProxyListSource.cs" />
+    <Compile Include="Interfaces\IValidatable.cs" />
+    <Compile Include="Parsers\HtmlProxyListParser.cs" />
+    <Compile Include="Parsers\LineRegexProxyListParser.cs" />
+    <Compile Include="Providers\CompositeProxyProvider.cs" />
+    <Compile Include="Providers\StaticProxyProvider.cs" />
+    <Compile Include="ProxyDiscovery.cs" />
+    <Compile Include="ProxyInformation.cs" />
+    <Compile Include="ProxyState.cs" />
+    <Compile Include="Sources\FileProxyListSource.cs" />
+    <Compile Include="Sources\WebProxyListSource.cs" />
+    <Compile Include="WellKnown.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.33" />
+  </ItemGroup>
+
+</Project>
