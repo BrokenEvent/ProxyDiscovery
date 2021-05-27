@@ -1,3 +1,7 @@
+[![GitHub license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://raw.githubusercontent.com/BrokenEvent/ProxyDiscovery/master/LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/BrokenEvent.ProxyDiscovery.svg?style=flat-square?color=informational&label=NuGet)](https://www.nuget.org/packages/BrokenEvent.ProxyDiscovery/)
+
+
 # ProxyDiscovery
 .NET library for valid and usable `IP:Port` proxy list discovery.
 
