@@ -13,7 +13,7 @@ using BrokenEvent.ProxyDiscovery.Interfaces;
 namespace BrokenEvent.ProxyDiscovery.Checkers
 {
   /// <summary>
-  /// Checks proxy availability by connecting with the proxy to given URL.
+  /// Checks proxy availability by connecting with the proxy to given URL. Supports only HTTPS proxies.
   /// </summary>
   public sealed class ProxyChecker: IProxyChecker
   {
@@ -66,6 +66,9 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
       if (requestBytes == null)
         throw new InvalidOperationException("Proxy checker not initialized, consider Prepare() call.");
 
+      if (proxy.IsHttps.HasValue && !proxy.IsHttps.Value)
+        return new ProxyState(proxy, ProxyCheckResult.Unckeched, "ProxyChecker doesn't support non-HTTPS proxies", TimeSpan.Zero);
+
       TcpClient client = new TcpClient();
       client.LingerState.Enabled = false;
       client.NoDelay = true;
@@ -91,7 +94,7 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
         sw.Stop();
 
         if (recv == 0)
-          return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, "Connection closed by a proxy server.", sw.Elapsed);
+          return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, "Connection closed by the proxy server.", sw.Elapsed);
 
         ProxyResponse response = new ProxyResponse(Encoding.ASCII.GetString(buffer, 0, recv));
 
@@ -100,6 +103,9 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
         if (response.StatusCode != 200)
           return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, $"Proxy status: {response.StatusCode} {response.Phrase}", sw.Elapsed);
+
+        // now we're certain that the proxy supports HTTPS
+        proxy.IsHttps = true;
 
         return new ProxyState(proxy, ProxyCheckResult.OK, response.Phrase, sw.Elapsed);
       }

@@ -34,9 +34,9 @@ namespace BrokenEvent.ProxyDiscovery
     public ushort Port { get; }
 
     /// <summary>
-    /// Gets the value indicating whether the proxy supports HTTPS.
+    /// Gets or sets the value indicating whether the proxy supports HTTPS.
     /// </summary>
-    public bool? IsHttps { get; }
+    public bool? IsHttps { get; set; }
 
     /// <summary>
     /// Gets the geographical location of the proxy.
@@ -44,9 +44,9 @@ namespace BrokenEvent.ProxyDiscovery
     public string Location { get; }
 
     /// <summary>
-    /// Whether the proxy can use Google search.
+    /// Gets or sets the value indicating whether the proxy can use Google search.
     /// </summary>
-    public bool? GooglePassed { get; }
+    public bool? GooglePassed { get; set; }
 
     public override string ToString()
     {
