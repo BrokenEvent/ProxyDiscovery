@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Authors>BrokenEvent</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/BrokenEvent/ProxyDiscovery.git</RepositoryUrl>
