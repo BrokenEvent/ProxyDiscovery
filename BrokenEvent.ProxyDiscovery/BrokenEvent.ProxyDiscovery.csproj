@@ -1,19 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>false</EnableDefaultItems>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>BrokenEvent</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/BrokenEvent/ProxyDiscovery.git</RepositoryUrl>
-    <PackageTags>proxy</PackageTags>
+    <PackageTags>proxy proxy-list proxy-checker</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes></PackageReleaseNotes>
     <Description>.NET library for valid and usable IP:Port proxy list discovery. Supports customization, filtering and proxy availability checks.</Description>
     <Copyright>©2021 Broken Event. All rights reserved.</Copyright>
     <PackageLicenseUrl>https://github.com/BrokenEvent/ProxyDiscovery/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://brokenevent.com/projects/proxydiscovery</PackageProjectUrl>
+    <PackageProjectUrl></PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
