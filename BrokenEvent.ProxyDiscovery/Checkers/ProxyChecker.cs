@@ -26,7 +26,7 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     public string TargetUrl { get; set; }
 
     /// <summary>
-    /// Gets or sets the send/receive timeout. The default is 0.
+    /// Gets or sets the send/receive timeout in milliseconds. The default is 0.
     /// </summary>
     public int Timeout { get; set; }
 

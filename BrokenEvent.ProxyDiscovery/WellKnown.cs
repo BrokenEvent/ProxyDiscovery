@@ -36,7 +36,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// </summary>
     public static readonly IProxyListParser FreeProxiesParser = new HtmlProxyListParser()
     {
-      ProxyTablePath = "//table[@id='proxylisttable']/tbody/tr",
+      ProxyTablePath = "//section[@id='list']//table/tbody/tr",
       IpPath = "td[1]",
       PortPath = "td[2]",
       IsHttpPath = "td[7]",
