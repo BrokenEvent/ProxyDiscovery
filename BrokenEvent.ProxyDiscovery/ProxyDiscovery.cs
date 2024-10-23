@@ -14,6 +14,8 @@ namespace BrokenEvent.ProxyDiscovery
   public sealed class ProxyDiscovery
   {
     private List<ProxyState> proxies;
+    private ProxyDiscoveryStatus status;
+    private bool updateLock;
 
     /// <summary>
     /// Gets the list of proxy list providers.
@@ -39,6 +41,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// <summary>
     /// Gets the list of proxies obtained during the recent <see cref="Update"/> operation.
     /// </summary>
+    /// <remarks>Will remain <c>null</c> until the proxy check is completed.</remarks>
     public IReadOnlyList<ProxyState> Proxies
     {
       get { return proxies; }
@@ -60,58 +63,114 @@ namespace BrokenEvent.ProxyDiscovery
     }
 
     /// <summary>
+    /// Gets the proxy discovery status.
+    /// </summary>
+    public ProxyDiscoveryStatus Status
+    {
+      get { return status; }
+      private set
+      {
+        status = value;
+        if (StatusChanged != null)
+          StatusChanged(value);
+      }
+    }
+
+    /// <summary>
     /// Updates the proxy discovery and gets fresh proxies list.
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     /// <param name="maxResults">Maximum number of working proxies to return. Default is 0 which means no limits.</param>
+    /// <remarks>You can track the state by <see cref="Status"/> property and <see cref="StatusChanged"/>, <see cref="AcquisitionComplete"/> and
+    /// <see cref="FilteringComplete"/> events.</remarks>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="Update"/> is called several times at once.</exception>
     public async Task Update(CancellationToken ct, int maxResults = 0)
     {
-      ProxyDiscoveryUpdate update = new ProxyDiscoveryUpdate(this, maxResults);
+      // don't call update several times
+      if (updateLock)
+        throw new InvalidOperationException("Duplicate call of Update");
 
-      // get the proxies lists in unified list
-      foreach (IProxyListProvider provider in Providers)
+      // set the lock
+      updateLock = true;
+
+      try
       {
-        if (LogMessage != null)
-          LogMessage($"Acquiring proxies list: {provider}");
+        ProxyDiscoveryUpdate update = new ProxyDiscoveryUpdate(this, maxResults);
 
-        try
-        {
-          update.UpdateProxyList(await provider.GetProxiesAsync(ct).ConfigureAwait(false));
-        }
-        catch (Exception e)
+        // clear the previous results if any
+        proxies = null;
+
+        // update status
+        Status = ProxyDiscoveryStatus.Acuisition;
+
+        // get the proxies lists in unified list
+        foreach (IProxyListProvider provider in Providers)
         {
           if (LogMessage != null)
-            LogMessage($"Failed to get proxy list from: {provider}. Message: {e.Message}");
+            LogMessage($"Acquiring proxies list: {provider}");
+
+          try
+          {
+            update.UpdateProxyList(await provider.GetProxiesAsync(ct).ConfigureAwait(false));
+          }
+          catch (Exception e)
+          {
+            if (LogMessage != null)
+              LogMessage($"Failed to get proxy list from: {provider}. Message: {e.Message}");
+          }
         }
-      }
 
-      if (LogMessage != null)
-        LogMessage($"Proxies acquired: {update.Count}");
-
-      // filter list (if any filters)
-      if (update.HasFilters)
-      {
-        await Task.Run((Action)update.FilterProxies, ct).ConfigureAwait(false);
         if (LogMessage != null)
-          LogMessage($"Proxies remain after filtering: {update.Count}");
-      }
+          LogMessage($"Proxies acquired: {update.Count}");
 
-      // check availability
-      if (Checker != null)
+        // status notify
+        if (AcquisitionComplete != null)
+          AcquisitionComplete(update.Count);
+
+        // filter list (if any filters)
+        if (update.HasFilters)
+        {
+          // update status
+          Status = ProxyDiscoveryStatus.Filtering;
+
+          await Task.Run((Action)update.FilterProxies, ct).ConfigureAwait(false);
+
+          if (LogMessage != null)
+            LogMessage($"Proxies remain after filtering: {update.Count}");
+        }
+
+        // status notify
+        if (FilteringComplete != null)
+          FilteringComplete(update.Count);
+
+        // check availability
+        if (Checker != null)
+        {
+          // update status
+          Status = ProxyDiscoveryStatus.Checking;
+
+          if (LogMessage != null)
+            LogMessage($"Checking proxy list availability, maxThreads = {MaxThreads}, maxResults = {(maxResults == 0 ? "unlimited" : maxResults.ToString())}");
+
+          Checker.Prepare();
+
+          await new TaskQueue<ProxyInformation>(update.Proxies, update.CheckProxyAvailability, MaxThreads, ct).Run().ConfigureAwait(false);
+        }
+        else
+          // or not
+          update.CollectResultsUnchecked();
+
+        // save the results
+        proxies = update.Results;
+      }
+      finally
       {
-        if (LogMessage != null)
-          LogMessage($"Checking proxy list availability, maxThreads = {MaxThreads}, maxResults = {(maxResults == 0 ? "unlimited" : maxResults.ToString())}");
+        // release the lock at all costs
+        updateLock = false;
 
-        Checker.Prepare();
-
-        await new TaskQueue<ProxyInformation>(update.Proxies, update.CheckProxyAvailability, MaxThreads, ct).Run().ConfigureAwait(false);
+        // and reset the state
+        Status = ProxyDiscoveryStatus.Idle;
       }
-      else
-        // or not
-        update.CollectResultsUnchecked();
-
-      // save the results
-      proxies = update.Results;
     }
 
     private void OnProxyCheckComplete(ProxyState state)
@@ -127,12 +186,29 @@ namespace BrokenEvent.ProxyDiscovery
 
     /// <summary>
     /// Event is called when the availability check is completed for a proxy during <see cref="Update"/>.
+    /// The parameter is the proxy just checked.
     /// </summary>
     /// <remarks>
     /// <para>Event is never called when <see cref="IProxyChecker"/> is <c>null</c>.</para>
     /// <para>Called from the background thread.</para>
     /// </remarks>
     public event Action<ProxyState> ProxyCheckComplete;
+
+    /// <summary>
+    /// Event is called when all proxy lists are acquired. The parameter is total count of proxies obtained.
+    /// </summary>
+    public event Action<int> AcquisitionComplete;
+
+    /// <summary>
+    /// Event is called when proxy filtering is completed. The parameter is count of proxies remain after filtering.
+    /// </summary>
+    /// <remarks>If there is no any filters, the event will still be fired.</remarks>
+    public event Action<int> FilteringComplete;
+
+    /// <summary>
+    /// Event is called when <see cref="Status"/> is changed. The parameter is new status.
+    /// </summary>
+    public event Action<ProxyDiscoveryStatus> StatusChanged;
 
     private class ProxyDiscoveryUpdate
     {
@@ -242,5 +318,25 @@ namespace BrokenEvent.ProxyDiscovery
         }
       }
     }
+  }
+
+  public enum ProxyDiscoveryStatus
+  {
+    /// <summary>
+    /// The proxy discovery is idle.
+    /// </summary>
+    Idle,
+    /// <summary>
+    /// The proxy discovery is acquiring and processing the proxy lists.
+    /// </summary>
+    Acuisition,
+    /// <summary>
+    /// The proxy discovery is filtering the proxy list.
+    /// </summary>
+    Filtering,
+    /// <summary>
+    /// The proxy discovery is checking proxies from the list.
+    /// </summary>
+    Checking
   }
 }
