@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 using BrokenEvent.ProxyDiscovery.Interfaces;
 
@@ -12,6 +15,11 @@ namespace BrokenEvent.ProxyDiscovery.Sources
   /// </summary>
   public sealed class WebProxyListSource: IProxyListSource
   {
+    /// <summary>
+    /// Gets the optional URL arguments to be added to the original URL.
+    /// </summary>
+    public List<Tuple<string, string>> Args { get; } = new List<Tuple<string, string>>();
+
     /// <summary>
     /// Creates an instance of the Web proxy list source.
     /// </summary>
@@ -39,12 +47,31 @@ namespace BrokenEvent.ProxyDiscovery.Sources
       return new WebClient().DownloadString(Url);
     }
 
+    private Uri GetActualUri()
+    {
+      Uri uri = new Uri(Url);
+      if (Args.Count == 0)
+        return uri;
+
+      // https://stackoverflow.com/a/19679135/4588884
+      UriBuilder uriBuilder = new UriBuilder(uri);
+      NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
+      foreach (Tuple<string, string> arg in Args)
+        query[arg.Item1] = arg.Item2;
+
+      uriBuilder.Query = query.ToString();
+
+      return uriBuilder.Uri;
+    }
+
     /// <inheritdoc />
     public Task<string> GetContentAsync(CancellationToken ct)
     {
+      Uri uri = GetActualUri();
+
       WebClient client = new WebClient();
       using (ct.Register(client.CancelAsync))
-        return client.DownloadStringTaskAsync(Url);
+        return client.DownloadStringTaskAsync(uri);
     }
 
     public override string ToString()

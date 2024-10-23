@@ -11,10 +11,14 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes></PackageReleaseNotes>
     <Description>.NET library for valid and usable IP:Port proxy list discovery. Supports customization, filtering and proxy availability checks.</Description>
-    <Copyright>©2021 Broken Event. All rights reserved.</Copyright>
+    <Copyright>©2021-2024 Broken Event. All rights reserved.</Copyright>
     <PackageLicenseUrl>https://github.com/BrokenEvent/ProxyDiscovery/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl></PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/BrokenEvent/ProxyDiscovery</PackageProjectUrl>
   </PropertyGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)'=='net461'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Checkers\ProxyChecker.cs" />
@@ -24,6 +28,7 @@
     <Compile Include="Filters\IncludeLocationFilter.cs" />
     <Compile Include="Filters\LocationBaseFilter.cs" />
     <Compile Include="Filters\PortFilter.cs" />
+    <Compile Include="Filters\ProtocolFilter.cs" />
     <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Helpers\TaskQueue.cs" />
     <Compile Include="Interfaces\IProxyChecker.cs" />

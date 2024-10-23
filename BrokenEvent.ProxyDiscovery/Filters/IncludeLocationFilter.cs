@@ -9,11 +9,11 @@ namespace BrokenEvent.ProxyDiscovery.Filters
   {
     public override bool DoesPassFilter(ProxyInformation proxy)
     {
-      if (string.IsNullOrWhiteSpace(proxy.Location))
+      if (string.IsNullOrWhiteSpace(proxy.Country))
         return false;
 
       foreach (string item in LocationItems)
-        if (item.Equals(proxy.Location, StringComparison.InvariantCultureIgnoreCase))
+        if (item.Equals(proxy.Country, StringComparison.InvariantCultureIgnoreCase))
           return true;
 
       return false;

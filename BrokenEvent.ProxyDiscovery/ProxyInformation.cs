@@ -2,11 +2,22 @@
 using System.Net;
 using System.Text;
 
+using BrokenEvent.ProxyDiscovery.Helpers;
+
 namespace BrokenEvent.ProxyDiscovery
 {
   public sealed class ProxyInformation: IEquatable<ProxyInformation>
   {
-    public ProxyInformation(IPAddress address, ushort port, bool? isHttps = null, string location = null, bool? googlePassed = null)
+    public ProxyInformation(
+      IPAddress address,
+      ushort port,
+      bool? isHttps = null,
+      bool? googlePassed = null,
+      string protocol = null,
+      string name = null,
+      string country = null,
+      string city = null
+      )
     {
       if (address == null)
         throw new ArgumentNullException(nameof(address));
@@ -14,12 +25,24 @@ namespace BrokenEvent.ProxyDiscovery
       Address = address;
       Port = port;
       IsHttps = isHttps;
+      Country = country;
+      City = city;
+      Name = name;
+      Protocol = protocol;
       GooglePassed = googlePassed;
-      Location = location;
     }
 
-    public ProxyInformation(string address, ushort port, bool? isHttps = null, string location = null, bool? googlePassed = null):
-      this(IPAddress.Parse(address), port, isHttps, location, googlePassed)
+    public ProxyInformation(
+        string address,
+        ushort port,
+        bool? isHttps = null,
+        bool? googlePassed = null,
+        string protocol = null,
+        string name = null,
+        string country = null,
+        string city = null
+      ) :
+      this(IPAddress.Parse(address), port, isHttps, googlePassed, protocol, name, country, city)
     {
     }
 
@@ -39,28 +62,50 @@ namespace BrokenEvent.ProxyDiscovery
     public bool? IsHttps { get; set; }
 
     /// <summary>
-    /// Gets the geographical location of the proxy.
+    /// Gets the proxy protocol, if known.
     /// </summary>
-    public string Location { get; }
+    public string Protocol { get; }
 
     /// <summary>
     /// Gets or sets the value indicating whether the proxy can use Google search.
     /// </summary>
     public bool? GooglePassed { get; set; }
 
+    /// <summary>
+    /// Gets the name of the proxy, if any.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    /// Gets the country of the proxy, if any.
+    /// </summary>
+    public string Country { get; }
+
+    /// <summary>
+    /// Gets the city of the proxy, if any.
+    /// </summary>
+    public string City { get; }
+
     public override string ToString()
     {
       StringBuilder sb = new StringBuilder();
-      sb.Append(Address).Append(":").Append(Port).Append(", ");
+      sb.Append(Address).Append(":").Append(Port);
 
       if (IsHttps.HasValue)
-        sb.Append(IsHttps.Value ? "HTTPS" : "HTTP").Append(", ");
+        sb.AppendItem(IsHttps.Value ? "HTTPS" : "HTTP");
 
       if (GooglePassed.HasValue)
-        sb.Append("Google: ").Append(GooglePassed.Value ? "yes" : "no").Append(", ");
+        sb.AppendItem("Google", GooglePassed.Value ? "yes" : "no");
 
-      if (Location != null)
-        sb.Append("Location: ").Append(Location);
+      if (Protocol != null)
+        sb.AppendItem("Protocol", Protocol);
+
+      if (Name != null)
+        sb.AppendItem("Name", Name);
+      if (Country != null)
+        sb.AppendItem("Country", Country);
+      if (City != null)
+        sb.AppendItem("City", City);
 
       return sb.ToString();
     }

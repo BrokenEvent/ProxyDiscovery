@@ -38,7 +38,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
     /// <para>May be <c>null</c>.</para>
     /// </remarks>
-    public string IsHttpPath { get; set; }
+    public string IsHttpsPath { get; set; }
 
     /// <summary>
     /// Gets or sets the XPath expression to get the value indicating whether the proxy is google-passed.
@@ -50,6 +50,24 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public string GooglePassedPath { get; set; }
 
     /// <summary>
+    /// Gets or sets the XPath expression to get the protocol (http, socks4, socks5, etc.) of the proxy.
+    /// </summary>
+    /// <remarks>
+    /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
+    /// <para>May be <c>null</c>.</para>
+    /// </remarks>
+    public string ProtocolPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the XPath expression to get the name of the proxy.
+    /// </summary>
+    /// <remarks>
+    /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
+    /// <para>May be <c>null</c>.</para>
+    /// </remarks>
+    public string NamePath { get; set; }
+
+    /// <summary>
     /// Gets or sets the XPath expression to get the country of the proxy.
     /// </summary>
     /// <remarks>
@@ -57,6 +75,15 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <para>May be <c>null</c>.</para>
     /// </remarks>
     public string CountryPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the XPath expression to get the city of the proxy.
+    /// </summary>
+    /// <remarks>
+    /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
+    /// <para>May be <c>null</c>.</para>
+    /// </remarks>
+    public string CityPath { get; set; }
 
     /// <inheritdoc />
     public IEnumerable<string> Validate()
@@ -84,9 +111,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
         yield return new ProxyInformation(
             IPAddress.Parse(node.SelectSingleNode(IpPath).InnerText),
             ushort.Parse(node.SelectSingleNode(PortPath).InnerText),
-            IsHttpPath == null || StringHelpers.ParseBool(node.SelectSingleNode(IsHttpPath).InnerText),
+            IsHttpsPath == null ? (bool?)null : StringHelpers.ParseBool(node.SelectSingleNode(IsHttpsPath).InnerText),
+            GooglePassedPath == null ? (bool?)null : StringHelpers.ParseBool(node.SelectSingleNode(GooglePassedPath).InnerText),
+            ProtocolPath == null ? null : node.SelectSingleNode(ProtocolPath).InnerText.ToLower(),
+            NamePath == null ? null : node.SelectSingleNode(NamePath).InnerText,
             CountryPath == null ? null : node.SelectSingleNode(CountryPath).InnerText,
-            GooglePassedPath == null ? (bool?)null : StringHelpers.ParseBool(node.SelectSingleNode(GooglePassedPath).InnerText)
+            CityPath == null ? null : node.SelectSingleNode(CityPath).InnerText
           );
       }
     }

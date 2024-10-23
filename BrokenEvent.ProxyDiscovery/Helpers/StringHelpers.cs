@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace BrokenEvent.ProxyDiscovery.Helpers
 {
@@ -95,6 +96,20 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
       }
 
       return true;
+    }
+
+    public static void AppendItem(this StringBuilder sb, string value)
+    {
+      if (sb.Length > 0)
+        sb.Append(", ");
+      sb.Append(value);
+    }
+
+    public static void AppendItem(this StringBuilder sb, string name, string value)
+    {
+      if (sb.Length > 0)
+        sb.Append(", ");
+      sb.Append(name).Append(": ").Append(value);
     }
   }
 }

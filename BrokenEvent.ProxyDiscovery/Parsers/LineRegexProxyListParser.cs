@@ -29,9 +29,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <list type="table">
     /// <item><term>address</term><description>IP address of the proxy. Mandatory.</description></item>
     /// <item><term>port</term><description>Port number of the proxy. Mandatory.</description></item>
-    /// <item><term>location</term><description>Geographical location of the proxy. Optional.</description></item>
     /// <item><term>https</term><description>Whether the proxy supports HTTPS. Optional.</description></item>
     /// <item><term>google</term><description>Whether the proxy is google-passed, i.e. can be used for google search. Optional</description></item>
+    /// <item><term>protocol</term><description>Protocol (http, socks4, socks5, etc.) of the proxy. Optional.</description></item>
+    /// <item><term>name</term><description>Name of the proxy. Optional.</description></item>
+    /// <item><term>country</term><description>Country of the proxy. Optional.</description></item>
+    /// <item><term>city</term><description>City of the proxy. Optional.</description></item>
     /// </list>
     /// For boolean groups like "https" and "google" missing group is treated as "unknown". For value "1", "yes", "true" and "+"
     /// (case-insensitive) are treated as <c>true</c>, other values are treated as <c>false</c>.
@@ -95,9 +98,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
 
         Group groupAddress = match.Groups["address"];
         Group groupPort = match.Groups["port"];
-        Group groupLocation = match.Groups["location"];
         Group groupHttps = match.Groups["https"];
         Group groupGoogle = match.Groups["google"];
+        Group groupProtocol = match.Groups["protocol"];
+        Group groupName = match.Groups["name"];
+        Group groupCountry = match.Groups["country"];
+        Group groupCity = match.Groups["city"];
 
         if (!groupAddress.Success || !groupPort.Success)
           continue;
@@ -105,9 +111,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
         yield return new ProxyInformation(
             groupAddress.Value,
             ushort.Parse(groupPort.Value),
-            groupHttps.Success,
-            groupLocation.Success ? groupLocation.Value : null,
-            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : (bool?)null
+            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : (bool?)null,
+            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : (bool?)null,
+            groupProtocol.Success ? groupProtocol.Value.ToLower() : null,
+            groupName.Success ? groupName.Value : null,
+            groupCountry.Success ? groupCountry.Value : null,
+            groupCity.Success ? groupCity.Value : null
           );
       }
     }

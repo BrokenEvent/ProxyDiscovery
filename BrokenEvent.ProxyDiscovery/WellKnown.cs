@@ -39,7 +39,7 @@ namespace BrokenEvent.ProxyDiscovery
       ProxyTablePath = "//section[@id='list']//table/tbody/tr",
       IpPath = "td[1]",
       PortPath = "td[2]",
-      IsHttpPath = "td[7]",
+      IsHttpsPath = "td[7]",
       CountryPath = "td[4]",
       GooglePassedPath = "td[6]"
     };
@@ -64,7 +64,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// </summary>
     public static readonly CompositeProxyProvider PubProxyProvider = new CompositeProxyProvider(
         new WebProxyListSource("https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list.txt"),
-        new LineRegexProxyListParser(@"(?<address>[\d\.]+):(?<port>\d+)\s+(?<location>\w{2})-(\w{1})(-(?<https>S{1}))?!{0,1}\s(?<google>(?:\+|-))\s*$")
+        new LineRegexProxyListParser(@"(?<address>[\d\.]+):(?<port>\d+)\s+(?<country>\w{2})-(\w{1})(-(?<https>S{1}))?!{0,1}\s(?<google>(?:\+|-))\s*$")
       );
   }
 }
