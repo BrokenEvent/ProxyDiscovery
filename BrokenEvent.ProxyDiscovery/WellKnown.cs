@@ -41,7 +41,8 @@ namespace BrokenEvent.ProxyDiscovery
       PortPath = "td[2]",
       IsHttpsPath = "td[7]",
       CountryPath = "td[4]",
-      GooglePassedPath = "td[6]"
+      GooglePassedPath = "td[6]",
+      DefaultProtocol = "http"
     };
 
     /// <summary>
@@ -62,8 +63,9 @@ namespace BrokenEvent.ProxyDiscovery
     /// <summary>
     /// Proxy provider for PubProxy. GitHub repo (https://github.com/clarketm/proxy-list). Public real-time API: http://pubproxy.com/
     /// </summary>
+    /// <remarks>More frequently updated source: https://spys.me/socks.txt </remarks>
     public static readonly CompositeProxyProvider PubProxyProvider = new CompositeProxyProvider(
-        new WebProxyListSource("https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list.txt"),
+        new WebProxyListSource("https://spys.me/socks.txt"),
         new LineRegexProxyListParser(@"(?<address>[\d\.]+):(?<port>\d+)\s+(?<country>\w{2})-(\w{1})(-(?<https>S{1}))?!{0,1}\s(?<google>(?:\+|-))\s*$")
       );
   }

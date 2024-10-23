@@ -59,6 +59,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public string ProtocolPath { get; set; }
 
     /// <summary>
+    /// Gets or sets the default protocol value (http, socks4, socks5, etc.). This is used when we know all the proxies has the same protocol.
+    /// </summary>
+    /// <remarks>May be <c>null</c>.</remarks>
+    public string DefaultProtocol { get; set; }
+
+    /// <summary>
     /// Gets or sets the XPath expression to get the name of the proxy.
     /// </summary>
     /// <remarks>
@@ -113,7 +119,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
             ushort.Parse(node.SelectSingleNode(PortPath).InnerText),
             IsHttpsPath == null ? (bool?)null : StringHelpers.ParseBool(node.SelectSingleNode(IsHttpsPath).InnerText),
             GooglePassedPath == null ? (bool?)null : StringHelpers.ParseBool(node.SelectSingleNode(GooglePassedPath).InnerText),
-            ProtocolPath == null ? null : node.SelectSingleNode(ProtocolPath).InnerText.ToLower(),
+            ProtocolPath == null ? DefaultProtocol : node.SelectSingleNode(ProtocolPath).InnerText.ToLower(),
             NamePath == null ? null : node.SelectSingleNode(NamePath).InnerText,
             CountryPath == null ? null : node.SelectSingleNode(CountryPath).InnerText,
             CityPath == null ? null : node.SelectSingleNode(CityPath).InnerText

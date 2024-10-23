@@ -41,6 +41,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// </remarks>
     public string LineRegex { get; set; }
 
+    /// <summary>
+    /// Gets or sets the default procotol. Used when we know all the proxies have the same protocol.
+    /// </summary>
+    /// <remarks>May be <c>null</c>.</remarks>
+    public string DefaultProtocol { get; set; }
+
     private string ValidateRegex()
     {
       try
@@ -113,7 +119,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
             ushort.Parse(groupPort.Value),
             groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : (bool?)null,
             groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : (bool?)null,
-            groupProtocol.Success ? groupProtocol.Value.ToLower() : null,
+            groupProtocol.Success ? groupProtocol.Value.ToLower() : DefaultProtocol,
             groupName.Success ? groupName.Value : null,
             groupCountry.Success ? groupCountry.Value : null,
             groupCity.Success ? groupCity.Value : null
