@@ -105,7 +105,7 @@ namespace BrokenEvent.ProxyDiscovery
 
       try
       {
-        ProxyDiscoveryUpdater updater = new ProxyDiscoveryUpdater(this, maxResults);
+        ProxyDiscoveryUpdater updater = new ProxyDiscoveryUpdater(this, maxResults, ct);
 
         // clear the previous results if any
         proxies = null;
@@ -128,6 +128,10 @@ namespace BrokenEvent.ProxyDiscovery
             if (LogMessage != null)
               LogMessage($"Failed to get proxy list from: {provider}. Message: {e.Message}");
           }
+
+          // respect the cancellation token
+          if (ct.IsCancellationRequested)
+            return;
         }
 
         if (LogMessage != null)
@@ -149,12 +153,16 @@ namespace BrokenEvent.ProxyDiscovery
             LogMessage($"Proxies remain after filtering: {updater.Count}");
         }
 
+        // respect the cancellation token
+        if (ct.IsCancellationRequested)
+          return;
+
         // status notify
         if (FilteringComplete != null)
           FilteringComplete(updater.Count);
 
         // generate proxies list base on proxies set with optional randomization
-        updater.SetProxiesList(RandomizeList);
+        updater.BuildProxiesList(RandomizeList);
 
         // check availability
         if (Checker != null)
@@ -167,13 +175,8 @@ namespace BrokenEvent.ProxyDiscovery
 
           Checker.Prepare();
 
-          await new TaskQueue<ProxyInformation>(
-                updater.Proxies,
-                updater.CheckProxyAvailability,
-                MaxThreads,
-                ct
-              ).Run()
-            .ConfigureAwait(false);
+          // run the check
+          await updater.CheckProxiesAvailability().ConfigureAwait(false);
         }
         else
           // or not
@@ -205,7 +208,8 @@ namespace BrokenEvent.ProxyDiscovery
 
     /// <summary>
     /// Event is called when the availability check is completed for a proxy during <see cref="Update"/>.
-    /// The parameter is the proxy just checked.
+    /// The parameter is the proxy just checked. The client should check <see cref="ProxyState.Result"/> carefully
+    /// as this event is called for all the proxies, including the ones which has failed the check.
     /// </summary>
     /// <remarks>
     /// <para>Event is never called when <see cref="IProxyChecker"/> is <c>null</c>.</para>
@@ -235,19 +239,28 @@ namespace BrokenEvent.ProxyDiscovery
       private readonly HashSet<ProxyInformation> proxySet = new HashSet<ProxyInformation>();
       private readonly List<IProxyFilter> filters;
       private readonly IProxyChecker checker;
-      private readonly int maxResults;
 
       private SpinLock proxyListLock = new SpinLock();
       private List<ProxyInformation> proxiesList = new List<ProxyInformation>();
-      private int resultsCount;
       private List<ProxyState> results = new List<ProxyState>();
 
-      public ProxyDiscoveryUpdater(ProxyDiscovery host, int maxResults)
+      private volatile int resultsCount;
+      private readonly int maxResults;
+      private CancellationTokenSource localCancellationTokenSource;
+      private CancellationToken globalCancellationToken;
+
+      public ProxyDiscoveryUpdater(ProxyDiscovery host, int maxResults, CancellationToken globalCancellationToken)
       {
         this.host = host;
         filters = new List<IProxyFilter>(host.Filters);
         checker = host.Checker;
+
+        // zero means infinity, but we either way can't exceed int.MaxValue
+        if (maxResults <= 0)
+          maxResults = int.MaxValue;
+
         this.maxResults = maxResults;
+        this.globalCancellationToken = globalCancellationToken;
       }
 
       public void UpdateProxyList(IEnumerable<ProxyInformation> proxies)
@@ -281,18 +294,44 @@ namespace BrokenEvent.ProxyDiscovery
         return false;
       }
 
-      public async Task<bool> CheckProxyAvailability(ProxyInformation proxy, CancellationToken ct)
+      public Task CheckProxiesAvailability()
       {
-        if (maxResults > 0 && resultsCount >= maxResults)
-          return false;
+        // creates a local cancelation source to cancel task once we reach the maximum number of results
+        localCancellationTokenSource = new CancellationTokenSource();
+        // cancel it as well when our outer cancelation token is canceled
+        globalCancellationToken.Register(Cancel);
+
+        // run task queue. we the cancelation token of our own source.
+        return new TaskQueue<ProxyInformation>(
+            proxiesList,
+            CheckProxyAvailability,
+            host.MaxThreads,
+            localCancellationTokenSource.Token
+          ).Run();
+      }
+
+      private void Cancel()
+      {
+        localCancellationTokenSource?.Cancel();
+      }
+
+      private async Task CheckProxyAvailability(ProxyInformation proxy, CancellationToken ct)
+      {
+        if (resultsCount >= maxResults)
+          return; // cease immediately
 
         ProxyState state = await checker.CheckProxy(proxy, ct).ConfigureAwait(false);
 
-        if (state.Result == ProxyCheckResult.OK && !AddResult(state))
-          return false;
-
+        // fire the event
         host.OnProxyCheckComplete(state);
-        return true;
+
+        // we add proxy to results only if they are checked as OK
+        if (state.Result != ProxyCheckResult.OK)
+          return;
+
+        // if we've reached the results count - cancel our local source
+        if (!AddResult(state))
+          localCancellationTokenSource.Cancel();
       }
 
       private bool AddResult(ProxyState state)
@@ -302,13 +341,13 @@ namespace BrokenEvent.ProxyDiscovery
         {
           proxyListLock.Enter(ref lockTaken);
 
-          if (maxResults > 0 && resultsCount >= maxResults)
+          if (resultsCount >= maxResults)
             return false;
 
           results.Add(state);
           resultsCount++;
 
-          return true;
+          return resultsCount < maxResults;
         }
         finally
         {
@@ -317,16 +356,11 @@ namespace BrokenEvent.ProxyDiscovery
         }
       }
 
-      public void SetProxiesList(bool randomize)
+      public void BuildProxiesList(bool randomize)
       {
         proxiesList = new List<ProxyInformation>(proxySet);
         if (randomize)
           proxiesList.Randomize();
-      }
-
-      public IEnumerable<ProxyInformation> Proxies
-      {
-        get { return proxiesList; }
       }
 
       public List<ProxyState> Results

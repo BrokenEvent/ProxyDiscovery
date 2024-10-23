@@ -117,5 +117,9 @@ namespace BrokenEvent.ProxyDiscovery
     /// Unspecified error, see <see cref="ProxyState.Status"/> for details.
     /// </summary>
     Failure,
+    /// <summary>
+    /// The check has been canceled.
+    /// </summary>
+    Canceled,
   }
 }
