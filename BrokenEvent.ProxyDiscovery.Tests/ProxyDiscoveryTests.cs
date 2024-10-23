@@ -16,12 +16,12 @@ namespace BrokenEvent.ProxyDiscovery.Tests
    
     private StaticProxyProvider testProvider = new StaticProxyProvider()
     {
-      /*0*/ new ProxyInformation("192.168.0.1", 80, true, "test", true),  // HTTPS, Google
-      /*1*/ new ProxyInformation("192.168.0.2", 180, false, "test", true),  // not HTTPS, Google
-      /*2*/ new ProxyInformation("192.168.0.3", 280, true, "test", false),  // HTTPS, not Google
-      /*3*/ new ProxyInformation("192.168.0.4", 380, null, "test", true),  // n/a, not Google
-      /*4*/ new ProxyInformation("192.168.0.5", 480, true, "test", null),  // HTTPS, n/a
-      /*5*/ new ProxyInformation("192.168.0.1", 580, true, "debug", true),
+      /*0*/ new ProxyInformation("192.168.0.1", 80, true, true, null, null, "test"),  // HTTPS, Google
+      /*1*/ new ProxyInformation("192.168.0.2", 180, false, true, null, null, "test"),  // not HTTPS, Google
+      /*2*/ new ProxyInformation("192.168.0.3", 280, true, false, null, null, "test"),  // HTTPS, not Google
+      /*3*/ new ProxyInformation("192.168.0.4", 380, null, true, null, null, "test"),  // n/a, not Google
+      /*4*/ new ProxyInformation("192.168.0.5", 480, true, null, null, null, "test"),  // HTTPS, n/a
+      /*5*/ new ProxyInformation("192.168.0.1", 580, true, true, null, null, "debug"),
     };
 
     private IEnumerable<ProxyState> BuildStates(params int[] indexes)

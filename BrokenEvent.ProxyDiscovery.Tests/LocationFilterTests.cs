@@ -85,7 +85,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(includeFilterValues))]
     public void IncludeFilter(U u)
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, u.Value);
+      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
 
       IncludeLocationFilter filter = new IncludeLocationFilter();
       filter.Locations = u.Filter;
@@ -110,7 +110,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(excludeFilterValues))]
     public void ExcludeFilter(U u)
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, u.Value);
+      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
 
       ExcludeLocationFilter filter = new ExcludeLocationFilter();
       filter.Locations = u.Filter;

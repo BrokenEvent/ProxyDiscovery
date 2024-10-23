@@ -48,6 +48,16 @@ namespace BrokenEvent.ProxyDiscovery
     }
 
     /// <summary>
+    /// Gets the value indicating whether to randomize proxy list.
+    /// </summary>
+    /// <remarks>
+    /// <para>The randomization takes place after filtering and before proxy checking.</para>
+    /// <para>The option is useful if there are several proxy sources. By default they will be checked in order they appear,
+    /// but this allows us to get proxies from different lists checked first.</para>
+    /// </remarks>
+    public bool RandomizeList { get; set; }
+
+    /// <summary>
     /// Gets a single proxy and removes it from list.
     /// </summary>
     /// <returns>Proxy information or <c>null</c> if the list is empty.</returns>
@@ -95,7 +105,7 @@ namespace BrokenEvent.ProxyDiscovery
 
       try
       {
-        ProxyDiscoveryUpdate update = new ProxyDiscoveryUpdate(this, maxResults);
+        ProxyDiscoveryUpdater updater = new ProxyDiscoveryUpdater(this, maxResults);
 
         // clear the previous results if any
         proxies = null;
@@ -111,7 +121,7 @@ namespace BrokenEvent.ProxyDiscovery
 
           try
           {
-            update.UpdateProxyList(await provider.GetProxiesAsync(ct).ConfigureAwait(false));
+            updater.UpdateProxyList(await provider.GetProxiesAsync(ct).ConfigureAwait(false));
           }
           catch (Exception e)
           {
@@ -121,27 +131,30 @@ namespace BrokenEvent.ProxyDiscovery
         }
 
         if (LogMessage != null)
-          LogMessage($"Proxies acquired: {update.Count}");
+          LogMessage($"Proxies acquired: {updater.Count}");
 
         // status notify
         if (AcquisitionComplete != null)
-          AcquisitionComplete(update.Count);
+          AcquisitionComplete(updater.Count);
 
         // filter list (if any filters)
-        if (update.HasFilters)
+        if (updater.HasFilters)
         {
           // update status
           Status = ProxyDiscoveryStatus.Filtering;
 
-          await Task.Run((Action)update.FilterProxies, ct).ConfigureAwait(false);
+          await Task.Run((Action)updater.FilterProxies, ct).ConfigureAwait(false);
 
           if (LogMessage != null)
-            LogMessage($"Proxies remain after filtering: {update.Count}");
+            LogMessage($"Proxies remain after filtering: {updater.Count}");
         }
 
         // status notify
         if (FilteringComplete != null)
-          FilteringComplete(update.Count);
+          FilteringComplete(updater.Count);
+
+        // generate proxies list base on proxies set with optional randomization
+        updater.SetProxiesList(RandomizeList);
 
         // check availability
         if (Checker != null)
@@ -154,14 +167,20 @@ namespace BrokenEvent.ProxyDiscovery
 
           Checker.Prepare();
 
-          await new TaskQueue<ProxyInformation>(update.Proxies, update.CheckProxyAvailability, MaxThreads, ct).Run().ConfigureAwait(false);
+          await new TaskQueue<ProxyInformation>(
+                updater.Proxies,
+                updater.CheckProxyAvailability,
+                MaxThreads,
+                ct
+              ).Run()
+            .ConfigureAwait(false);
         }
         else
           // or not
-          update.CollectResultsUnchecked();
+          updater.CollectResultsUnchecked();
 
         // save the results
-        proxies = update.Results;
+        proxies = updater.Results;
       }
       finally
       {
@@ -210,7 +229,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// </summary>
     public event Action<ProxyDiscoveryStatus> StatusChanged;
 
-    private class ProxyDiscoveryUpdate
+    private class ProxyDiscoveryUpdater
     {
       private readonly ProxyDiscovery host;
       private readonly HashSet<ProxyInformation> proxySet = new HashSet<ProxyInformation>();
@@ -219,10 +238,11 @@ namespace BrokenEvent.ProxyDiscovery
       private readonly int maxResults;
 
       private SpinLock proxyListLock = new SpinLock();
+      private List<ProxyInformation> proxiesList = new List<ProxyInformation>();
       private int resultsCount;
       private List<ProxyState> results = new List<ProxyState>();
 
-      public ProxyDiscoveryUpdate(ProxyDiscovery host, int maxResults)
+      public ProxyDiscoveryUpdater(ProxyDiscovery host, int maxResults)
       {
         this.host = host;
         filters = new List<IProxyFilter>(host.Filters);
@@ -233,11 +253,6 @@ namespace BrokenEvent.ProxyDiscovery
       public void UpdateProxyList(IEnumerable<ProxyInformation> proxies)
       {
         proxySet.UnionWith(proxies);
-      }
-
-      public IEnumerable<ProxyInformation> Proxies
-      {
-        get { return proxySet; }
       }
 
       public int Count
@@ -302,6 +317,18 @@ namespace BrokenEvent.ProxyDiscovery
         }
       }
 
+      public void SetProxiesList(bool randomize)
+      {
+        proxiesList = new List<ProxyInformation>(proxySet);
+        if (randomize)
+          proxiesList.Randomize();
+      }
+
+      public IEnumerable<ProxyInformation> Proxies
+      {
+        get { return proxiesList; }
+      }
+
       public List<ProxyState> Results
       {
         get { return results; }
@@ -309,7 +336,7 @@ namespace BrokenEvent.ProxyDiscovery
 
       public void CollectResultsUnchecked()
       {
-        foreach (ProxyInformation proxy in proxySet)
+        foreach (ProxyInformation proxy in proxiesList)
         {
           results.Add(new ProxyState(proxy, ProxyCheckResult.Unckeched, "Not checked", TimeSpan.Zero));
 
