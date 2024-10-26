@@ -11,7 +11,7 @@ namespace BrokenEvent.ProxyDiscovery
   /// <summary>
   /// Performs proxy list update and availability checks.
   /// </summary>
-  public sealed class ProxyDiscovery
+  public sealed class ProxyDiscovery: IValidatable
   {
     private List<ProxyState> proxies;
     private ProxyDiscoveryStatus status;
@@ -190,9 +190,29 @@ namespace BrokenEvent.ProxyDiscovery
         // release the lock at all costs
         updateLock = false;
 
+        if (LogMessage != null)
+          LogMessage("Proxy list update complete.");
+
         // and reset the state
         Status = ProxyDiscoveryStatus.Idle;
       }
+    }
+
+    public IEnumerable<string> Validate()
+    {
+      if (Providers.Count == 0)
+        yield return $"[Discovery] No proxy providers";
+
+      foreach (IProxyListProvider provider in Providers)
+        foreach (string s in provider.Validate())
+          yield return s;
+
+      foreach (IProxyFilter filter in Filters)
+        foreach (string s in filter.Validate())
+          yield return s;
+
+      foreach (string s in Checker.Validate())
+        yield return s;
     }
 
     private void OnProxyCheckComplete(ProxyState state)
