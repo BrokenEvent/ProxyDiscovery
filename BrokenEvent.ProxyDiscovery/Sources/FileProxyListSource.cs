@@ -35,15 +35,15 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     public string FilePath { get; set; }
 
     /// <inheritdoc />
-    public string GetContent()
+    public Task<string> GetContentAsync(CancellationToken ct, Action<string> onError)
     {
-      return File.ReadAllText(FilePath);
-    }
+      if (!File.Exists(FilePath))
+      {
+        onError($"The file '{FilePath}' does not exists");
+        return null;
+      }
 
-    /// <inheritdoc />
-    public Task<string> GetContentAsync(CancellationToken ct)
-    {
-      return Task.Run((Func<string>)GetContent, ct);
+      return Task.Run(() => File.ReadAllText(FilePath), ct);
     }
 
     public override string ToString()

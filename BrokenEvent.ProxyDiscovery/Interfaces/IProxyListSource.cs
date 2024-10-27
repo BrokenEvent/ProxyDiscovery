@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BrokenEvent.ProxyDiscovery.Interfaces
@@ -9,16 +10,11 @@ namespace BrokenEvent.ProxyDiscovery.Interfaces
   public interface IProxyListSource: IValidatable
   {
     /// <summary>
-    /// Gets the raw proxy list content synchronously.
-    /// </summary>
-    /// <returns>Proxy list string.</returns>
-    string GetContent();
-
-    /// <summary>
     /// Gets the raw proxy list content asynchronously.
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
+    /// <param name="onError">Call in case of proxy list acquisition errors.</param>
     /// <returns>Proxy list string.</returns>
-    Task<string> GetContentAsync(CancellationToken ct);
+    Task<string> GetContentAsync(CancellationToken ct, Action<string> onError);
   }
 }

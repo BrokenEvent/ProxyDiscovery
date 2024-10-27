@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,13 +26,7 @@ namespace BrokenEvent.ProxyDiscovery.Providers
     }
 
     /// <inheritdoc />
-    public IEnumerable<ProxyInformation> GetProxies()
-    {
-      return Proxies;
-    }
-
-    /// <inheritdoc />
-    public Task<IEnumerable<ProxyInformation>> GetProxiesAsync(CancellationToken ct)
+    public Task<IEnumerable<ProxyInformation>> GetProxiesAsync(CancellationToken ct, Action<string> onError)
     {
       return Task.FromResult((IEnumerable<ProxyInformation>)Proxies);
     }
@@ -53,6 +48,11 @@ namespace BrokenEvent.ProxyDiscovery.Providers
     public void Add(ProxyInformation proxy)
     {
       Proxies.Add(proxy);
+    }
+
+    public override string ToString()
+    {
+      return "Static proxy list provider";
     }
   }
 }

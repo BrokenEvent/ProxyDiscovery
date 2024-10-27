@@ -9,6 +9,12 @@ namespace BrokenEvent.ProxyDiscovery.Filters
   /// </summary>
   public sealed class HttpsFilter: IProxyFilter
   {
+    /// <summary>
+    /// Gets or sets the value indicating whether to pass proxies with unknown <see cref="ProxyInformation.IsHttps"/> value.
+    /// </summary>
+    /// <remarks>If this value is <c>false</c> (default), only proxies which are known to support HTTPS will pass the filter.</remarks>
+    public bool AllowUnknown { get; set; }
+
     /// <inheritdoc />
     public IEnumerable<string> Validate()
     {
@@ -19,7 +25,7 @@ namespace BrokenEvent.ProxyDiscovery.Filters
     /// <inheritdoc />
     public bool DoesPassFilter(ProxyInformation proxy)
     {
-      return proxy.IsHttps.HasValue && proxy.IsHttps.Value;
+      return proxy.IsHttps.HasValue ? proxy.IsHttps.Value : AllowUnknown;
     }
   }
 }

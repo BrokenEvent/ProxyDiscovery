@@ -30,6 +30,11 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// </summary>
     public int Timeout { get; set; }
 
+    /// <summary>
+    /// Gets or sets the HTTP version to check with.
+    /// </summary>
+    public HttpVersion HttpVersion { get; set; } = HttpVersion.OneOne;
+
     /// <inheritdoc />
     public IEnumerable<string> Validate()
     {
@@ -42,17 +47,34 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     {
       if (TargetUrl == null)
         throw new InvalidOperationException("Unable to prepare proxy checker, no target URL specified.");
+
       requestBytes = Encoding.ASCII.GetBytes(BuildConnectRequest());
     }
 
-    private string BuildConnectRequest(bool appendHost = true)
+    private string BuildConnectRequest()
     {
       Uri uri = new Uri(TargetUrl);
 
       StringBuilder sb = new StringBuilder();
-      sb.Append("CONNECT ").Append(uri.Host).Append(':').Append(uri.Port).Append(" HTTP/1.1\r\n");
+      sb.Append("CONNECT ").Append(uri.Host).Append(':').Append(uri.Port).Append(" HTTP/");
 
-      if (appendHost)
+      switch (HttpVersion)
+      {
+        case HttpVersion.OneZero:
+          sb.Append("1.0");
+          break;
+
+        case HttpVersion.OneOne:
+          sb.Append("1.0");
+          break;
+
+        default:
+          throw new InvalidOperationException($"Invalid or unsupported HTTP version: {HttpVersion}");
+      }
+
+      sb.Append("\r\n");
+
+      if (HttpVersion == HttpVersion.OneOne)
         sb.Append("Host: ").Append(uri.Host).Append(':').Append(uri.Port).Append("\r\n");
 
       sb.Append("\r\n");
@@ -144,7 +166,6 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
       }
       finally
       {
-        //sw.Stop();
         client.Dispose();
       }
     }
@@ -178,5 +199,18 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
         IsValid = true;
       }
     }
+  }
+ 
+  public enum HttpVersion
+  {
+    /// <summary>
+    /// Test on HTTP/1.0
+    /// </summary>
+    OneZero,
+    /// <summary>
+    /// Test on HTTP/1.1
+    /// </summary>
+    /// <remarks>The only difference is that Host header is required for 1.1.</remarks>
+    OneOne
   }
 }

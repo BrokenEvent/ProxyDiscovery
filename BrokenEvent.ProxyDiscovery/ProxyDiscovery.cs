@@ -86,6 +86,12 @@ namespace BrokenEvent.ProxyDiscovery
       }
     }
 
+    private void OnProxyProviderError(string error)
+    {
+      if (ProxyProviderError != null)
+        ProxyProviderError(error);
+    }
+
     /// <summary>
     /// Updates the proxy discovery and gets fresh proxies list.
     /// </summary>
@@ -121,7 +127,7 @@ namespace BrokenEvent.ProxyDiscovery
 
           try
           {
-            updater.UpdateProxyList(await provider.GetProxiesAsync(ct).ConfigureAwait(false));
+            updater.UpdateProxyList(await provider.GetProxiesAsync(ct, OnProxyProviderError).ConfigureAwait(false));
           }
           catch (Exception e)
           {
@@ -201,7 +207,7 @@ namespace BrokenEvent.ProxyDiscovery
     public IEnumerable<string> Validate()
     {
       if (Providers.Count == 0)
-        yield return $"[Discovery] No proxy providers";
+        yield return "[Discovery] No proxy providers";
 
       foreach (IProxyListProvider provider in Providers)
         foreach (string s in provider.Validate())
@@ -225,6 +231,11 @@ namespace BrokenEvent.ProxyDiscovery
     /// Event is called when the proxy discovery writes a verbose log message.
     /// </summary>
     public event Action<string> LogMessage;
+
+    /// <summary>
+    /// Event is called when proxy list provider or one of its subcomponents encounters an error.
+    /// </summary>
+    public event Action<string> ProxyProviderError;
 
     /// <summary>
     /// Event is called when the availability check is completed for a proxy during <see cref="Update"/>.
@@ -285,6 +296,8 @@ namespace BrokenEvent.ProxyDiscovery
 
       public void UpdateProxyList(IEnumerable<ProxyInformation> proxies)
       {
+        if (proxies == null)
+          return; // fatal provider error
         proxySet.UnionWith(proxies);
       }
 

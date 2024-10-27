@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Net;
 using System.Text;
 
 namespace BrokenEvent.ProxyDiscovery.Helpers
 {
-  static class StringHelpers
+  public static class StringHelpers
   {
     public static bool ParseBool(string s)
     {
       if (string.IsNullOrWhiteSpace(s))
         return false;
 
-      s = s.ToLower();
+      s = s.Trim().ToLower();
       return s == "1" || s == "yes" || s == "true" || s == "+";
     }
 
@@ -110,6 +111,21 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
       if (sb.Length > 0)
         sb.Append(", ");
       sb.Append(name).Append(": ").Append(value);
+    }
+
+    public static bool ParseEndPoint(string value, out IPAddress address, out ushort port)
+    {
+      int i = value.IndexOf(':');
+      if (i != -1)
+      {
+        address = IPAddress.Parse(value.Substring(0, i));
+
+        return ushort.TryParse(value.Substring(i + 1), out port);
+      }
+
+      address = null;
+      port = 0;
+      return false;
     }
   }
 }

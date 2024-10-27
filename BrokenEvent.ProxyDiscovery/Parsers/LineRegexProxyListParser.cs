@@ -74,8 +74,11 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       }
     }
 
-    private Match CreateMatch(string line)
+    private Match CreateMatch(string line, Action<string> onError)
     {
+      if (string.IsNullOrWhiteSpace(line))
+        return null;
+
       try
       {
         Match match = Regex.Match(line, LineRegex);
@@ -85,20 +88,21 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
 
         return match;
       }
-      catch
+      catch (Exception e)
       {
+        onError($"Unable to parse line '{line}': {e.Message}");
         return null;
       }
     }
 
     /// <inheritdoc />
-    public IEnumerable<ProxyInformation> ParseContent(string content)
+    public IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
     {
       string[] lines = content.Split(new string[] { "\r", "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
 
       foreach (string line in lines)
       {
-        Match match = CreateMatch(line);
+        Match match = CreateMatch(line, onError);
         if (match == null)
           continue;
 
@@ -112,7 +116,10 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
         Group groupCity = match.Groups["city"];
 
         if (!groupAddress.Success || !groupPort.Success)
+        {
+          onError($"Line '{line}' does not contain address and port");
           continue;
+        }
 
         yield return new ProxyInformation(
             groupAddress.Value,
@@ -125,6 +132,11 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
             groupCity.Success ? groupCity.Value : null
           );
       }
+    }
+
+    public override string ToString()
+    {
+      return "Line Regex Parser";
     }
   }
 }

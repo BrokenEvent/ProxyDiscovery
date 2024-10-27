@@ -41,12 +41,6 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     /// </summary>
     public string Url { get; set; }
 
-    /// <inheritdoc />
-    public string GetContent()
-    {
-      return new WebClient().DownloadString(Url);
-    }
-
     private Uri GetActualUri()
     {
       Uri uri = new Uri(Url);
@@ -65,13 +59,17 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     }
 
     /// <inheritdoc />
-    public Task<string> GetContentAsync(CancellationToken ct)
+    public Task<string> GetContentAsync(CancellationToken ct, Action<string> onError)
     {
       Uri uri = GetActualUri();
 
-      WebClient client = new WebClient();
-      using (ct.Register(client.CancelAsync))
-        return client.DownloadStringTaskAsync(uri);
+      using (WebClient client = new WebClient())
+      {
+        client.Proxy = new WebProxy();
+
+        using (ct.Register(client.CancelAsync))
+          return client.DownloadStringTaskAsync(uri);
+      }
     }
 
     public override string ToString()

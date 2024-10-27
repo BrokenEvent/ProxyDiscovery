@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -50,20 +51,21 @@ namespace BrokenEvent.ProxyDiscovery.Providers
     }
 
     /// <inheritdoc />
-    public IEnumerable<ProxyInformation> GetProxies()
+    public async Task<IEnumerable<ProxyInformation>> GetProxiesAsync(CancellationToken ct, Action<string> onError)
     {
-      return Parser.ParseContent(Source.GetContent());
-    }
+      string content = await Source.GetContentAsync(ct, onError);
 
-    /// <inheritdoc />
-    public async Task<IEnumerable<ProxyInformation>> GetProxiesAsync(CancellationToken ct)
-    {
-      return Parser.ParseContent(await Source.GetContentAsync(ct).ConfigureAwait(false));
+      // do we have content?
+      if (!string.IsNullOrWhiteSpace(content))
+        return Parser.ParseContent(content, onError);
+
+      onError("Proxy list source returned empty content");
+      return null;
     }
 
     public override string ToString()
     {
-      return Source?.ToString();
+      return $"Composite: {Source} + {Parser}";
     }
   }
 }
