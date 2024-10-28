@@ -1,0 +1,16 @@
+Squid,3128
+Apache HTTP Proxy,8080
+Nginx Proxy,80,443,8080
+Microsoft ISA/TMG,8080,8081
+WinGate,1080,80
+Blue Coat ProxySG,8080,3128
+Tinyproxy,8888
+Privoxy,8118
+Polipo,8123
+Dante (SOCKS),1080
+3Proxy,3128,8080
+HAProxy,80,443
+Charles,Proxy,8888
+Fiddler,8888
+Varnish Cache,6081,80
+Apache Traffic Server,8080,8081

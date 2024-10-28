@@ -45,9 +45,14 @@
     <Compile Include="ProxyDiscovery.cs" />
     <Compile Include="ProxyInformation.cs" />
     <Compile Include="ProxyState.cs" />
+    <Compile Include="ServiceDetector.cs" />
     <Compile Include="Sources\FileProxyListSource.cs" />
     <Compile Include="Sources\WebProxyListSource.cs" />
     <Compile Include="WellKnown.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="services.csv" />
   </ItemGroup>
 
   <ItemGroup>

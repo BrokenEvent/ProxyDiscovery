@@ -30,6 +30,7 @@ namespace BrokenEvent.ProxyDiscovery
       Name = name;
       Protocol = protocol;
       GooglePassed = googlePassed;
+      Server = ServiceDetector.DetectService(port);
     }
 
     public ProxyInformation(
@@ -118,6 +119,12 @@ namespace BrokenEvent.ProxyDiscovery
     {
       return $"{Address}:{Port}";
     }
+
+    /// <summary>
+    /// Gets the guess about proxy server service name by its port.
+    /// </summary>
+    /// <see cref="ServiceDetector"/>
+    public string Server { get; }
 
     /// <summary>
     /// Converts the proxy to <see cref="WebProxy"/> for <see cref="WebRequest"/>.

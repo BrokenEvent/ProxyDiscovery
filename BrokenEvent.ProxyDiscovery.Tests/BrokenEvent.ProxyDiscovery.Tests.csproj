@@ -48,6 +48,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProtocolFilterTests.cs" />
     <Compile Include="ProxyDiscoveryTests.cs" />
+    <Compile Include="ServiceDetectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
