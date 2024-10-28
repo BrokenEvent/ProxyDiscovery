@@ -1,0 +1,4 @@
+IP;Location;port;Country;City;Protocol;Some data;HTTPS;Name;Google
+192.168.0.1;White house;3128;USA;Washington;http;Serves the President;+;President Personal Server;0
+192.168.0.2;Pentagon;8081;USA;Washington;http;Serves the US Defence;yes;Common Militrary proxy;
+192.168.198.50;Secret Bunker;6666;Russia;Moscow;;Serves the terrorists;;;yes

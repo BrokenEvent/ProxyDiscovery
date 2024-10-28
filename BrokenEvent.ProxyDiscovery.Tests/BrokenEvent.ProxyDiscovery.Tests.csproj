@@ -40,6 +40,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CsvParserTests.cs" />
+    <Compile Include="CsvProxyListParserTests.cs" />
     <Compile Include="GoogleFilterTests.cs" />
     <Compile Include="HelpersTests.cs" />
     <Compile Include="LocationFilterTests.cs" />
@@ -51,6 +53,18 @@
     <Compile Include="ServiceDetectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Data\comma_header_ip_port.csv" />
+    <EmbeddedResource Include="Data\comma_noheader_ip_port.csv" />
+    <EmbeddedResource Include="Data\semicolon_header_ip_port.csv" />
+    <EmbeddedResource Include="Data\semicolon_noheader_ip_port.csv" />
+    <EmbeddedResource Include="Data\comma_header_endpoint.csv" />
+    <EmbeddedResource Include="Data\comma_noheader_endpoint.csv" />
+    <EmbeddedResource Include="Data\semicolon_header_endpoint.csv" />
+    <EmbeddedResource Include="Data\semicolon_noheader_endpoint.csv" />
+    <EmbeddedResource Include="Data\comma_header_endpoint_protocol.csv" />
+    <EmbeddedResource Include="Data\semicolon_noheader_ip_port_protocol.csv" />
+    <EmbeddedResource Include="Data\semicolon_header_ip_port_full.csv" />
+    <EmbeddedResource Include="Data\semicolon_header_endpoint_spec.csv" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

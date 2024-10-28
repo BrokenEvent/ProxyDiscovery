@@ -38,6 +38,8 @@
     <Compile Include="Interfaces\IProxyListProvider.cs" />
     <Compile Include="Interfaces\IProxyListSource.cs" />
     <Compile Include="Interfaces\IValidatable.cs" />
+    <Compile Include="Parsers\CsvParser.cs" />
+    <Compile Include="Parsers\CsvProxyListParser.cs" />
     <Compile Include="Parsers\HtmlProxyListParser.cs" />
     <Compile Include="Parsers\LineRegexProxyListParser.cs" />
     <Compile Include="Providers\CompositeProxyProvider.cs" />

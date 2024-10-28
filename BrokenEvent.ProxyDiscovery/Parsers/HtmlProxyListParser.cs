@@ -47,6 +47,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <remarks>
     /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
     /// <para>May be <c>null</c>.</para>
+    /// <para>Values "1", "yes", "true" and "+" (case-insensitive) are treated as <c>true</c>, other values are treated as <c>false</c>.</para>
     /// </remarks>
     public string IsHttpsPath { get; set; }
 
@@ -56,6 +57,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <remarks>
     /// <para>Relative to one of the nodes returned by <see cref="ProxyTablePath"/>.</para>
     /// <para>May be <c>null</c>.</para>
+    /// <para>Values "1", "yes", "true" and "+" (case-insensitive) are treated as <c>true</c>, other values are treated as <c>false</c>.</para>
     /// </remarks>
     public string GooglePassedPath { get; set; }
 
