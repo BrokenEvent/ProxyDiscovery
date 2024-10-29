@@ -35,6 +35,17 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// </summary>
     public HttpVersion HttpVersion { get; set; } = HttpVersion.OneOne;
 
+    /// <summary>
+    /// Gets or sets the value indicating whether to cancel gracefully.
+    /// </summary>
+    /// <remarks>
+    /// <para>Non-graceful operation cancel will stop all connections immediately (<see cref="TcpClient.Close"/>) which may lead to different internal
+    /// exceptions up to NPE and a possible leak of socket resources.</para>
+    /// <para>Graceful operation cancel will wait until the current async operation (socket connect/send/receive) is finished.
+    /// In worst cases this may take up to several tens of seconds to completely cancel the proxy discovery.</para>
+    /// </remarks>
+    public bool GracefulCancel { get; set; } = true;
+
     /// <inheritdoc />
     public IEnumerable<string> Validate()
     {
@@ -102,6 +113,12 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
       client.ReceiveTimeout = Timeout;
 
       Stopwatch sw = Stopwatch.StartNew();
+
+      // if we intent to cancel non-gracefully, register TcpClient.Close() to be called once the cancel is received. Only if.
+      CancellationTokenRegistration? ctr = null;
+      if (!GracefulCancel)
+        ctr = ct.Register(client.Close);
+
       try
       {
         // attempt to connect to target host
@@ -162,10 +179,15 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
       }
       catch (Exception e)
       {
+        // we can encounter different types of exceptions on cancel, even NPEs, so don't log them.
+        if (ct.IsCancellationRequested)
+          return new ProxyState(proxy, ProxyCheckResult.Canceled, "Check has been canceled", TimeSpan.Zero);
+
         return new ProxyState(proxy, ProxyCheckResult.Failure, e.Message, TimeSpan.Zero);
       }
       finally
       {
+        ctr?.Dispose();
         client.Dispose();
       }
     }
