@@ -18,7 +18,7 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     /// <summary>
     /// Gets the optional URL arguments to be added to the original URL.
     /// </summary>
-    public List<Tuple<string, string>> Args { get; } = new List<Tuple<string, string>>();
+    public List<WebProxyListSourceArg> Args { get; } = new List<WebProxyListSourceArg>();
 
     /// <summary>
     /// Creates an instance of the Web proxy list source.
@@ -34,6 +34,14 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     {
       if (string.IsNullOrWhiteSpace(Url))
         yield return "Source URL is missing";
+
+      foreach (WebProxyListSourceArg arg in Args)
+      {
+        if (string.IsNullOrWhiteSpace(arg.Name))
+          yield return "URL argument name cannot be empty";
+        if (string.IsNullOrWhiteSpace(arg.Value))
+          yield return "URL argument value cannot be empty";
+      }
     }
 
     /// <summary>
@@ -50,8 +58,8 @@ namespace BrokenEvent.ProxyDiscovery.Sources
       // https://stackoverflow.com/a/19679135/4588884
       UriBuilder uriBuilder = new UriBuilder(uri);
       NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
-      foreach (Tuple<string, string> arg in Args)
-        query[arg.Item1] = arg.Item2;
+      foreach (WebProxyListSourceArg arg in Args)
+        query[arg.Name] = arg.Value;
 
       uriBuilder.Query = query.ToString();
 
@@ -76,5 +84,11 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     {
       return $"Web: {Url}";
     }
+  }
+
+  public class WebProxyListSourceArg
+  {
+    public string Name { get; set; }
+    public string Value { get; set; }
   }
 }
