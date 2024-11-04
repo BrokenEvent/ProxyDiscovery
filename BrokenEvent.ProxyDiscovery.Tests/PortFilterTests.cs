@@ -31,10 +31,13 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       new P(null, ""), 
 
       new P("80", "80"), 
+      new P("~80", "~80"), 
       new P("8080", "8080"), 
 
       new P("80,8080", "80, 8080"), 
       new P("80, 8080", "80, 8080"), 
+      new P("80, ~8080", "80, ~8080"), 
+      new P("~80, 8080", "~80, 8080"), 
       new P("80 , 8080", "80, 8080"), 
       new P("80 8080", "80, 8080"), 
       new P("80  8080", "80, 8080"), 
@@ -53,13 +56,12 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       new P("80-8080", "80-8080"), 
 
       new P("80-100, 120-140", "80-100, 120-140"), 
+      new P("80-100, ~120-140", "80-100, ~120-140"), 
+      new P("~80-100, 120-140", "~80-100, 120-140"), 
       new P("80-100, 120-140,", "80-100, 120-140"), 
       new P("80-100  120-140", "80-100, 120-140"), 
       new P("80 - 100  120 - 140", "80-100, 120-140"), 
       new P("80 - 100  120 - 140", "80-100, 120-140"),
-
-      new P("80-100, 8080", "80-100, 8080"),
-      new P("8080, 80-100", "8080, 80-100"),
     };
 
     [TestCaseSource(nameof(parsingPositiveValues))]
@@ -111,19 +113,60 @@ namespace BrokenEvent.ProxyDiscovery.Tests
 
     public static readonly U[] filterValues = new U[]
     {
+      new U("80,81", 79, false),
       new U("80,81", 80, true),
       new U("80,81", 81, true),
       new U("80,81", 82, false),
 
+      new U("~80,81", 79, false),
+      new U("~80,81", 80, false),
+      new U("~80,81", 81, true),
+      new U("~80,81", 82, false),
+
+      new U("~80,~81", 79, true),
+      new U("~80,~81", 80, false),
+      new U("~80,~81", 81, false),
+      new U("~80,~81", 82, true),
+
+      new U("80-81", 79, false),
       new U("80-81", 80, true),
       new U("80-81", 81, true),
       new U("80-81", 82, false),
+
+      new U("~80-81", 79, true),
+      new U("~80-81", 80, false),
+      new U("~80-81", 81, false),
+      new U("~80-81", 82, true),
 
       new U("80,82-85", 80, true),
       new U("80,82-85", 81, false),
       new U("80,82-85", 82, true),
       new U("80,82-85", 85, true),
       new U("80,82-85", 86, false),
+
+      new U("~80,82-85", 80, false),
+      new U("~80,82-85", 81, false),
+      new U("~80,82-85", 82, true),
+      new U("~80,82-85", 85, true),
+      new U("~80,82-85", 86, false),
+
+      new U("100-200, ~125", 99, false), 
+      new U("100-200, ~125", 100, true), 
+      new U("100-200, ~125", 124, true), 
+      new U("100-200, ~125", 125, false), 
+      new U("100-200, ~125", 126, true), 
+      new U("100-200, ~125", 200, true), 
+      new U("100-200, ~125", 201, false), 
+
+      new U("100-200, ~120-130", 99, false), 
+      new U("100-200, ~120-130", 100, true), 
+      new U("100-200, ~120-130", 119, true), 
+      new U("100-200, ~120-130", 120, false), 
+      new U("100-200, ~120-130", 123, false), 
+      new U("100-200, ~120-130", 130, false), 
+      new U("100-200, ~120-130", 131, true), 
+      new U("100-200, ~120-130", 200, true), 
+      new U("100-200, ~120-130", 201, false), 
     };
 
     [TestCaseSource(nameof(filterValues))]

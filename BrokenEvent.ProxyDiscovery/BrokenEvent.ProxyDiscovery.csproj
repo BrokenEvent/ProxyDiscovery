@@ -30,6 +30,7 @@
     <Compile Include="Filters\PortFilter.cs" />
     <Compile Include="Filters\ProtocolFilter.cs" />
     <Compile Include="Helpers\ListHelpers.cs" />
+    <Compile Include="Helpers\PortSetParser.cs" />
     <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Helpers\TaskQueue.cs" />
     <Compile Include="Interfaces\IProxyChecker.cs" />

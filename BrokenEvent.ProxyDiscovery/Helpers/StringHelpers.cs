@@ -42,7 +42,7 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
       return false;
     }
 
-    public static string GetDigits(string s, ref int i)
+    public static int? GetDigits(string s, ref int i)
     {
       int start = i;
 
@@ -57,7 +57,7 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
         i++;
       }
 
-      return i > start ? s.Substring(start, i - start) : null;
+      return i > start ? int.Parse(s.Substring(start, i - start)) : (int?)null;
     }
 
     public static string GetToken(string s, ref int i)
