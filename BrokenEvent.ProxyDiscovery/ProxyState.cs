@@ -44,7 +44,7 @@ namespace BrokenEvent.ProxyDiscovery
 
     public override string ToString()
     {
-      return $"{Proxy} - {Result}, {Delay} ms";
+      return $"{Proxy} - {Result}, {Delay.TotalMilliseconds} ms";
     }
 
     #region Equality
