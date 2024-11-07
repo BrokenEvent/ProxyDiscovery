@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 using BrokenEvent.ProxyDiscovery.Helpers;
-using BrokenEvent.ProxyDiscovery.Interfaces;
 
 namespace BrokenEvent.ProxyDiscovery.Parsers
 {
   /// <summary>
   /// Parses the CSV content to proxy list.
   /// </summary>
-  public sealed class CsvProxyListParser: IProxyListParser
+  public sealed class CsvProxyListParser: AbstractProxyListParser
   {
     private static readonly string[] LineDelimiters = new string[] { "\r", "\n", "\r\n" };
 
@@ -60,12 +58,6 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public int? ProtocolColumn { get; set; }
 
     /// <summary>
-    /// Gets or sets the default protocol value (http, socks4, socks5, etc.). This is used when we know all the proxies has the same protocol.
-    /// </summary>
-    /// <remarks>May be <c>null</c>.</remarks>
-    public string DefaultProtocol { get; set; }
-
-    /// <summary>
     /// Gets or sets zero-based number of column containing the proxy server name.
     /// </summary>
     public int? NameColumn { get; set; }
@@ -80,7 +72,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// </summary>
     public int? CityColumn { get; set; }
 
-    public IEnumerable<string> Validate()
+    /// <inheritdoc />
+    public override IEnumerable<string> Validate()
     {
       if (!EndpointColumn.HasValue && IpColumn == PortColumn)
         yield return "IP column and Port column numbers cannot be equal";
@@ -108,13 +101,13 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return cols[index.Value];
     }
 
-    private static bool GetRowBool(IReadOnlyList<string> cols, int? index)
+    private static bool? GetRowBool(IReadOnlyList<string> cols, int? index, bool? defaultValue)
     {
       if (!index.HasValue)
-        return false;
+        return defaultValue;
 
       if (index.Value < 0 || index.Value >= cols.Count)
-        return false;
+        return defaultValue;
 
       return StringHelpers.ParseBool(cols[index.Value]);
     }
@@ -165,8 +158,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return new ProxyInformation(
           address,
           port,
-          GetRowBool(cols, IsHttpsColumn),
-          GetRowBool(cols, GooglePassedColumn),
+          GetRowBool(cols, IsHttpsColumn, DefaultHttps),
+          GetRowBool(cols, GooglePassedColumn, DefaultGoogle),
           GetRow(cols, ProtocolColumn, DefaultProtocol),
           GetRow(cols, NameColumn),
           GetRow(cols, CountryColumn),
@@ -189,7 +182,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return ';';
     }
 
-    public IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
+    /// <inheritdoc />
+    public override IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
     {
       string[] rows = content.Split(LineDelimiters, StringSplitOptions.RemoveEmptyEntries);
 

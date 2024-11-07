@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 using BrokenEvent.ProxyDiscovery.Helpers;
-using BrokenEvent.ProxyDiscovery.Interfaces;
 
 namespace BrokenEvent.ProxyDiscovery.Parsers
 {
   /// <summary>
   /// Gets the proxy list by splitting the content by lines and parsing each one with regex.
   /// </summary>
-  public sealed class LineRegexProxyListParser: IProxyListParser
+  public sealed class LineRegexProxyListParser: AbstractProxyListParser
   {
     /// <summary>
     /// Creates an instance of line-based regex proxy list parser.
@@ -41,12 +40,6 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// </remarks>
     public string LineRegex { get; set; }
 
-    /// <summary>
-    /// Gets or sets the default procotol. Used when we know all the proxies have the same protocol.
-    /// </summary>
-    /// <remarks>May be <c>null</c>.</remarks>
-    public string DefaultProtocol { get; set; }
-
     private string ValidateRegex()
     {
       try
@@ -62,7 +55,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     }
 
     /// <inheritdoc />
-    public IEnumerable<string> Validate()
+    public override IEnumerable<string> Validate()
     {
       if (string.IsNullOrWhiteSpace(LineRegex))
         yield return "Line regex cannot be empty";
@@ -96,7 +89,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     }
 
     /// <inheritdoc />
-    public IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
+    public override IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
     {
       string[] lines = content.Split(new string[] { "\r", "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -124,8 +117,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
         yield return new ProxyInformation(
             groupAddress.Value,
             ushort.Parse(groupPort.Value),
-            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : (bool?)null,
-            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : (bool?)null,
+            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : DefaultHttps,
+            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : DefaultGoogle,
             groupProtocol.Success ? groupProtocol.Value.ToLower() : DefaultProtocol,
             groupName.Success ? groupName.Value : null,
             groupCountry.Success ? groupCountry.Value : null,

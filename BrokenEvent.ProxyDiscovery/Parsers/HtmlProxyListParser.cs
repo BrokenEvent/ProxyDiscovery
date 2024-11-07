@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 
 using BrokenEvent.ProxyDiscovery.Helpers;
-using BrokenEvent.ProxyDiscovery.Interfaces;
 
 using HtmlAgilityPack;
 
@@ -12,7 +11,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
   /// <summary>
   /// Gets the proxy list from the HTML page content.
   /// </summary>
-  public sealed class HtmlProxyListParser: IProxyListParser
+  public sealed class HtmlProxyListParser: AbstractProxyListParser
   {
     /// <summary>
     /// Gets or sets the XPath expression for proxies list. 
@@ -71,12 +70,6 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public string ProtocolPath { get; set; }
 
     /// <summary>
-    /// Gets or sets the default protocol value (http, socks4, socks5, etc.). This is used when we know all the proxies has the same protocol.
-    /// </summary>
-    /// <remarks>May be <c>null</c>.</remarks>
-    public string DefaultProtocol { get; set; }
-
-    /// <summary>
     /// Gets or sets the XPath expression to get the name of the proxy.
     /// </summary>
     /// <remarks>
@@ -104,7 +97,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public string CityPath { get; set; }
 
     /// <inheritdoc />
-    public IEnumerable<string> Validate()
+    public override IEnumerable<string> Validate()
     {
       if (string.IsNullOrWhiteSpace(ProxyTablePath))
         yield return "Proxy table XPath is missing";
@@ -151,14 +144,14 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return result.Trim();
     }
 
-    private static bool? GetNodeBoolContent(HtmlNode parent, string xPath)
+    private static bool? GetNodeBoolContent(HtmlNode parent, string xPath, bool? defaultValue)
     {
       if (string.IsNullOrWhiteSpace(xPath))
-        return false;
+        return defaultValue;
 
       HtmlNode node = parent.SelectSingleNode(xPath);
       if (node == null)
-        return null;
+        return defaultValue;
 
       return StringHelpers.ParseBool(node.InnerText);
     }
@@ -207,8 +200,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return new ProxyInformation(
           address,
           port,
-          GetNodeBoolContent(node, IsHttpsPath),
-          GetNodeBoolContent(node, GooglePassedPath),
+          GetNodeBoolContent(node, IsHttpsPath, DefaultHttps),
+          GetNodeBoolContent(node, GooglePassedPath, DefaultGoogle),
           GetNodeContent(node, ProtocolPath, DefaultProtocol),
           GetNodeContent(node, NamePath),
           GetNodeContent(node, CountryPath),
@@ -217,7 +210,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     }
 
     /// <inheritdoc />
-    public IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
+    public override IEnumerable<ProxyInformation> ParseContent(string content, Action<string> onError)
     {
       HtmlDocument doc = new HtmlDocument();
       doc.LoadHtml(content);
