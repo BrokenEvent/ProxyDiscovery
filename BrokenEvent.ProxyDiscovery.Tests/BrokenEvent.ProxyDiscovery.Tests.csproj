@@ -40,11 +40,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CountryResolverTests.cs" />
     <Compile Include="CsvParserTests.cs" />
     <Compile Include="CsvProxyListParserTests.cs" />
     <Compile Include="GoogleFilterTests.cs" />
     <Compile Include="HelpersTests.cs" />
-    <Compile Include="LocationFilterTests.cs" />
+    <Compile Include="CountryFilterTests.cs" />
     <Compile Include="HttpsFilterTests.cs" />
     <Compile Include="PortFilterTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
