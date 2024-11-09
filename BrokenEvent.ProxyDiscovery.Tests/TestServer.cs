@@ -12,7 +12,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
   class TestServer
   {
     private TcpListener listener;
-    private List<TestServerExchange> exchanges = new List<TestServerExchange>();
+    private TcpClient client;
+    protected List<TestServerExchange> exchanges = new List<TestServerExchange>();
 
     public string Error { get; private set; }
 
@@ -27,28 +28,10 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       listener = new TcpListener(IPAddress.Any, port);
       listener.Start();
 
-      TcpClient client = await listener.AcceptTcpClientAsync();
+      client = await listener.AcceptTcpClientAsync();
       try
       {
-        NetworkStream stream = client.GetStream();
-
-        byte[] buffer = new byte[1024];
-
-        foreach (TestServerExchange exchange in exchanges)
-        {
-          int received = await stream.ReadAsync(buffer, 0, bufferSize);
-
-          if (received == 0)
-            Assert.Fail("Premature end of connection");
-
-          string request = Encoding.ASCII.GetString(buffer, 0, received);
-
-          Assert.AreEqual(exchange.Request, request);
-
-          byte[] response = Encoding.ASCII.GetBytes(exchange.Response);
-
-          await stream.WriteAsync(response, 0, response.Length);
-        }
+        await HandleConnection(client.GetStream(), bufferSize);
       }
       catch (Exception e)
       {
@@ -57,11 +40,39 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       finally
       {
         client.Dispose();
+        client = null;
         listener.Stop();
       }
     }
 
-    private class TestServerExchange
+    public void Stop()
+    {
+      client?.Dispose();
+    }
+
+    protected virtual async Task HandleConnection(NetworkStream stream, int bufferSize)
+    {
+      byte[] buffer = new byte[bufferSize];
+
+      foreach (TestServerExchange exchange in exchanges)
+      {
+        int received = await stream.ReadAsync(buffer, 0, bufferSize);
+
+        if (received == 0)
+          Assert.Fail("Premature end of connection");
+
+        string request = Encoding.ASCII.GetString(buffer, 0, received);
+
+        if (exchange.Request != null)
+          Assert.AreEqual(exchange.Request, request);
+
+        byte[] response = Encoding.ASCII.GetBytes(exchange.Response);
+
+        await stream.WriteAsync(response, 0, response.Length);
+      }
+    }
+
+    protected class TestServerExchange
     {
       public TestServerExchange(string request, string response)
       {

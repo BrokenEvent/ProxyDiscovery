@@ -26,6 +26,10 @@
     /// </summary>
     UnparsableResponse,
     /// <summary>
+    /// SSL authentication error, see <see cref="ProxyState.Status"/> for details.
+    /// </summary>
+    SSLError,
+    /// <summary>
     /// Unspecified error, see <see cref="ProxyState.Status"/> for details.
     /// </summary>
     Failure,

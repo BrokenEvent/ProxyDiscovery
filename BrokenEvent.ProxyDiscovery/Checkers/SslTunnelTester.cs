@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,9 +23,6 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
     public async Task<TunnelTestResult> CheckTunnel(Uri uri, Stream stream, CancellationToken ct)
     {
-      // TODO
-      SslPolicyErrors sslErrors = SslPolicyErrors.None;
-
       // create wrapper stream
       SslStream sslStream = null;
       try
@@ -34,9 +32,8 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
             true,
             (sender, certificate, chain, errors) =>
             {
-              // store the errors
-              sslErrors = errors;
-              return true;
+              // allow to continue only when no errors
+              return errors == SslPolicyErrors.None;
             }
           );
 
@@ -49,6 +46,10 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
         // process inner check
         return await InnerTester.CheckTunnel(uri, sslStream, ct);
+      }
+      catch (AuthenticationException e)
+      {
+        return new TunnelTestResult(ProxyCheckResult.SSLError, e.Message);
       }
       finally
       {

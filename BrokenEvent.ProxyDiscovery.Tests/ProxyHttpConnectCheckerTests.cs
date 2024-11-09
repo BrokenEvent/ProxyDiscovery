@@ -19,14 +19,16 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       public IProxyTunnelTester TunnelTester { get; }
       public HttpVersion Version { get; }
       public ProxyCheckResult ExpectedResult { get; }
+      public string Target { get; }
 
-      public U(int port, TestServer server, IProxyTunnelTester tunnelTester, HttpVersion version, ProxyCheckResult expectedResult)
+      public U(int port, TestServer server, IProxyTunnelTester tunnelTester, HttpVersion version, ProxyCheckResult expectedResult, string target = "http://test.com")
       {
         Port = port;
         Server = server;
         TunnelTester = tunnelTester;
         Version = version;
         ExpectedResult = expectedResult;
+        Target = target;
       }
 
       public override string ToString()
@@ -111,7 +113,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           portCounter++,
           new TestServer()
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n")
-            .AddExchange("HEAD / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.0 200 OK\r\n\r\n"),
+            .AddExchange("HEAD / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
           ProxyCheckResult.OK
@@ -149,7 +151,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           new TestServer()
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n")
             .AddExchange("TRACE / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.0 200 OK\r\n\r\n"),
-          new HttpTraceTunnelTester(), 
+          new HttpTraceTunnelTester(),
           HttpVersion.OneOne,
           ProxyCheckResult.OK
         ),
@@ -179,6 +181,36 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           HttpVersion.OneOne,
           ProxyCheckResult.NetworkError
         ),
+
+      // HTTP1.1 via head via SSL
+      new U(
+          portCounter++,
+          new TestServer()
+            .AddExchange("CONNECT test.com:443 HTTP/1.1\r\nHost:test.com:443\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n")
+            .AddExchange(null, "null"),
+          new HttpHeadTunnelTester(),
+          HttpVersion.OneOne,
+          ProxyCheckResult.NetworkError,
+          "https://test.com"
+        ),
+      new U(
+          portCounter++,
+          new TestServerRelay("brokenevent.com")
+            .AddExchange("CONNECT brokenevent.com:443 HTTP/1.1\r\nHost:brokenevent.com:443\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
+          new HttpHeadTunnelTester(),
+          HttpVersion.OneOne,
+          ProxyCheckResult.OK,
+          "https://brokenevent.com"
+        ),
+      new U(
+          portCounter++,
+          new TestServerRelay("brokenevent.com")
+            .AddExchange("CONNECT microsoft.com:443 HTTP/1.1\r\nHost:microsoft.com:443\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
+          new HttpHeadTunnelTester(),
+          HttpVersion.OneOne,
+          ProxyCheckResult.SSLError,
+          "https://microsoft.com"
+        ),
     };
 
     [TestCaseSource(nameof(testData))]
@@ -189,19 +221,27 @@ namespace BrokenEvent.ProxyDiscovery.Tests
         Task.Run(() => u.Server.Start(u.Port));
 #pragma warning restore 4014
 
-      ProxyHttpConnectChecker checker = new ProxyHttpConnectChecker
+      try
       {
-        TargetUrl = new Uri("http://test.com"),
-        TunnelTester = u.TunnelTester,
-        HttpVersion = u.Version
-      };
 
-      checker.Prepare();
-      ProxyState state = await checker.CheckProxy(new ProxyInformation("127.0.0.1", (ushort)u.Port), CancellationToken.None);
+        ProxyHttpConnectChecker checker = new ProxyHttpConnectChecker
+        {
+          TargetUrl = new Uri(u.Target),
+          TunnelTester = u.TunnelTester,
+          HttpVersion = u.Version
+        };
 
-      if (u.Server != null)
-        Assert.IsNull(u.Server.Error);
-      Assert.AreEqual(u.ExpectedResult, state.Result);
+        checker.Prepare();
+        ProxyState state = await checker.CheckProxy(new ProxyInformation("127.0.0.1", (ushort)u.Port), CancellationToken.None);
+
+        if (u.Server != null)
+          Assert.IsNull(u.Server.Error);
+        Assert.AreEqual(u.ExpectedResult, state.Result);
+      }
+      finally
+      {
+        u.Server?.Stop();
+      }
     }
   }
 }

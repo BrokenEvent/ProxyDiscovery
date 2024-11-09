@@ -56,6 +56,7 @@
     <Compile Include="ProxyDiscoveryTests.cs" />
     <Compile Include="ServiceDetectorTests.cs" />
     <Compile Include="TestServer.cs" />
+    <Compile Include="TestServerRelay.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\comma_header_ip_port.csv" />

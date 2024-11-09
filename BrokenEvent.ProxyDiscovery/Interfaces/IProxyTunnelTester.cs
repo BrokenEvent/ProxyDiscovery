@@ -46,15 +46,17 @@ namespace BrokenEvent.ProxyDiscovery.Interfaces
   public enum TunnelTesterProtocol
   {
     /// <summary>
-    /// The tunnel tester works with HTTP protocol, which means for HTTPS support it must be wrapped in SSL.
+    /// The tunnel tester works with HTTP protocol.
     /// </summary>
+    /// <remarks>If the target URL uses "https" scheme the tester will be wrapped with SSL-supporting tester.</remarks>
     Http,
     /// <summary>
     /// The tunnel tester works with SSL.
     /// </summary>
+    /// <remarks>If the target URL uses "http" (not "https") scheme, an exception will be thrown.</remarks>
     SSL,
     /// <summary>
-    /// We should not care about the protocol.
+    /// The tester cares about the protocol by itself.
     /// </summary>
     DontCare
   }

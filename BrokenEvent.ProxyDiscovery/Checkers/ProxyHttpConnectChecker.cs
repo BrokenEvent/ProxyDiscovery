@@ -48,6 +48,14 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// </remarks>
     public bool GracefulCancel { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the proxy tunnel tester.
+    /// </summary>
+    /// <remarks>
+    /// <para>Used to test the tunnel created by a proxy server to the <see cref="TargetUrl"/>.</para>
+    /// <para>If the <see cref="TargetUrl"/> uses "https" scheme and tester's protocol is <see cref="TunnelTesterProtocol.Http"/>
+    /// it will automatically be wrapped with <see cref="SslTunnelTester"/>.</para>
+    /// </remarks>
     public IProxyTunnelTester TunnelTester { get; set; } = new HttpHeadTunnelTester();
 
     /// <inheritdoc />
