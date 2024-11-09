@@ -9,6 +9,12 @@ namespace BrokenEvent.ProxyDiscovery.Filters
   /// </summary>
   public sealed class GooglePassedFilter: IProxyFilter
   {
+    /// <summary>
+    /// Gets or sets the value indicating whether to pass proxies with unknown <see cref="ProxyInformation.IsGooglePassed"/> value.
+    /// </summary>
+    /// <remarks>If this value is <c>false</c> (default), only proxies which are known to be supported by Google will pass the filter.</remarks>
+    public bool AllowUnknown { get; set; }
+
     public IEnumerable<string> Validate()
     {
       // nothing to validate
@@ -17,7 +23,7 @@ namespace BrokenEvent.ProxyDiscovery.Filters
 
     public bool DoesPassFilter(ProxyInformation proxy)
     {
-      return proxy.GooglePassed.HasValue && proxy.GooglePassed.Value;
+      return proxy.IsGooglePassed.HasValue ? proxy.IsGooglePassed.Value : AllowUnknown;
     }
   }
 }

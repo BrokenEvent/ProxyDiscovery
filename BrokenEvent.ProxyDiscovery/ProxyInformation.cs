@@ -12,7 +12,7 @@ namespace BrokenEvent.ProxyDiscovery
       IPAddress address,
       ushort port,
       bool? isHttps = null,
-      bool? googlePassed = null,
+      bool? isGooglePassed = null,
       string protocol = null,
       string name = null,
       string country = null,
@@ -29,7 +29,7 @@ namespace BrokenEvent.ProxyDiscovery
       City = city;
       Name = name;
       Protocol = protocol;
-      GooglePassed = googlePassed;
+      IsGooglePassed = isGooglePassed;
       Server = ServiceDetector.DetectService(port);
     }
 
@@ -37,13 +37,13 @@ namespace BrokenEvent.ProxyDiscovery
         string address,
         ushort port,
         bool? isHttps = null,
-        bool? googlePassed = null,
+        bool? isGooglePassed = null,
         string protocol = null,
         string name = null,
         string country = null,
         string city = null
       ) :
-      this(IPAddress.Parse(address), port, isHttps, googlePassed, protocol, name, country, city)
+      this(IPAddress.Parse(address), port, isHttps, isGooglePassed, protocol, name, country, city)
     {
     }
 
@@ -70,7 +70,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// <summary>
     /// Gets or sets the value indicating whether the proxy can use Google search.
     /// </summary>
-    public bool? GooglePassed { get; set; }
+    public bool? IsGooglePassed { get; set; }
 
     /// <summary>
     /// Gets the name of the proxy, if any.
@@ -95,8 +95,8 @@ namespace BrokenEvent.ProxyDiscovery
       if (IsHttps.HasValue)
         sb.AppendItem(IsHttps.Value ? "HTTPS" : "HTTP");
 
-      if (GooglePassed.HasValue)
-        sb.AppendItem("Google", GooglePassed.Value ? "yes" : "no");
+      if (IsGooglePassed.HasValue)
+        sb.AppendItem("Google", IsGooglePassed.Value ? "yes" : "no");
 
       if (Protocol != null)
         sb.AppendItem("Protocol", Protocol);

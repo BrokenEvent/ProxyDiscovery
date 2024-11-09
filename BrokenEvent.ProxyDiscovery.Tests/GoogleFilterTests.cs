@@ -7,26 +7,38 @@ namespace BrokenEvent.ProxyDiscovery.Tests
   [TestFixture]
   class GoogleFilterTests
   {
-    [Test]
-    public void Positive()
+    public class U
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, googlePassed: true);
+      public bool Expected { get; }
+      public ProxyInformation Proxy { get; }
+      public bool AllowUnknown;
 
-      GooglePassedFilter filter = new GooglePassedFilter();
-      
-      Assert.False(filter.Validate().GetEnumerator().MoveNext());
-      Assert.True(filter.DoesPassFilter(proxy));
+      public U(bool expected, bool? google, bool allowUnknown)
+      {
+        Expected = expected;
+        Proxy = new ProxyInformation("192.168.0.1", 80, isGooglePassed: google);
+        AllowUnknown = allowUnknown;
+      }
     }
 
-    [Test]
-    public void Negative()
+    public static readonly U[] testData = new U[]
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, googlePassed: false);
+      new U(true, true, true),
+      new U(false, false, true),
+      new U(true, null, true),
 
-      GooglePassedFilter filter = new GooglePassedFilter();
-      
+      new U(true, true, false),
+      new U(false, false, false),
+      new U(false, null, false),
+    };
+
+    [TestCaseSource(nameof(testData))]
+    public void TestHttpsFilter(U u)
+    {
+      GooglePassedFilter filter = new GooglePassedFilter { AllowUnknown = u.AllowUnknown };
+
       Assert.False(filter.Validate().GetEnumerator().MoveNext());
-      Assert.False(filter.DoesPassFilter(proxy));
+      Assert.AreEqual(u.Expected, filter.DoesPassFilter(u.Proxy));
     }
   }
 }

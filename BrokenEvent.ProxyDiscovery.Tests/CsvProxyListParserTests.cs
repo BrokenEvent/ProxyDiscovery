@@ -136,7 +136,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       Assert.AreEqual("Washington", list[0].City);
       Assert.AreEqual("President Personal Server", list[0].Name);
       Assert.IsTrue(list[0].IsHttps);
-      Assert.IsFalse(list[0].GooglePassed);
+      Assert.IsFalse(list[0].IsGooglePassed);
 
       Assert.AreEqual(3, list.Count);
       Assert.AreEqual("192.168.0.2", list[1].Address.ToString());
@@ -146,7 +146,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       Assert.AreEqual("Washington", list[1].City);
       Assert.AreEqual("Common Militrary proxy", list[1].Name);
       Assert.IsTrue(list[1].IsHttps);
-      Assert.IsFalse(list[1].GooglePassed);
+      Assert.IsFalse(list[1].IsGooglePassed);
 
       Assert.AreEqual(3, list.Count);
       Assert.AreEqual("192.168.198.50", list[2].Address.ToString());
@@ -156,7 +156,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       Assert.AreEqual("Moscow", list[2].City);
       Assert.IsNull(list[2].Name);
       Assert.IsFalse(list[2].IsHttps);
-      Assert.IsTrue(list[2].GooglePassed);
+      Assert.IsTrue(list[2].IsGooglePassed);
     }
   }
 }
