@@ -23,13 +23,14 @@
   <ItemGroup>
     <Compile Include="Checkers\ProxyChecker.cs" />
     <Compile Include="CountryResolver.cs" />
-    <Compile Include="Filters\ExcludeLocationFilter.cs" />
+    <Compile Include="Filters\ExcludeCountryFilter.cs" />
     <Compile Include="Filters\GooglePassedFilter.cs" />
     <Compile Include="Filters\HttpsFilter.cs" />
-    <Compile Include="Filters\IncludeLocationFilter.cs" />
+    <Compile Include="Filters\IncludeCountryFilter.cs" />
     <Compile Include="Filters\LocationBaseFilter.cs" />
     <Compile Include="Filters\PortFilter.cs" />
     <Compile Include="Filters\ProtocolFilter.cs" />
+    <Compile Include="Fluent.cs" />
     <Compile Include="Helpers\ListHelpers.cs" />
     <Compile Include="Helpers\PortSetParser.cs" />
     <Compile Include="Helpers\StringHelpers.cs" />

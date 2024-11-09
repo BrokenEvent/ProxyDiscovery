@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace BrokenEvent.ProxyDiscovery.Tests
 {
   [TestFixture]
-  class LocationFilterTests
+  class CountryFilterTests
   {
     public class P
     {
@@ -45,7 +45,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(parsingPositiveValues))]
     public void ParsingPositive(P p)
     {
-      IncludeLocationFilter filter = new IncludeLocationFilter();
+      IncludeCountryFilter filter = new IncludeCountryFilter();
       filter.Locations = p.Actual;
 
       Assert.AreEqual(p.Expected, filter.Locations);
@@ -87,7 +87,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     {
       ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
 
-      IncludeLocationFilter filter = new IncludeLocationFilter();
+      IncludeCountryFilter filter = new IncludeCountryFilter();
       filter.Locations = u.Filter;
 
       Assert.False(filter.Validate().GetEnumerator().MoveNext());
@@ -112,7 +112,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     {
       ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
 
-      ExcludeLocationFilter filter = new ExcludeLocationFilter();
+      ExcludeCountryFilter filter = new ExcludeCountryFilter();
       filter.Locations = u.Filter;
 
       Assert.False(filter.Validate().GetEnumerator().MoveNext());

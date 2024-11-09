@@ -141,6 +141,9 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       if (string.IsNullOrWhiteSpace(result))
         return defaultValue;
 
+      // fucking HTML
+      result = result.Replace("&nbsp;", "");
+
       return result.Trim();
     }
 

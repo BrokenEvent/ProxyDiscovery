@@ -95,7 +95,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       ProxyDiscovery discovery = new ProxyDiscovery
       {
         Providers = { testProvider },
-        Filters = { new HttpsFilter(), new IncludeLocationFilter { Locations = "test" } },
+        Filters = { new HttpsFilter(), new IncludeCountryFilter { Locations = "test" } },
         MaxThreads = 1
       };
 

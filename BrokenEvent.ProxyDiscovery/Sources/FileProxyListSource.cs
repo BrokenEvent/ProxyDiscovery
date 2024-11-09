@@ -9,7 +9,7 @@ using BrokenEvent.ProxyDiscovery.Interfaces;
 namespace BrokenEvent.ProxyDiscovery.Sources
 {
   /// <summary>
-  /// Loads a list of proxies from file.
+  /// Loads a list of proxies from a text file.
   /// </summary>
   public sealed class FileProxyListSource: IProxyListSource
   {

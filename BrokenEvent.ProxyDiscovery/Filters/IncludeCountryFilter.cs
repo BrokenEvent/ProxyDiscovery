@@ -3,20 +3,20 @@
 namespace BrokenEvent.ProxyDiscovery.Filters
 {
   /// <summary>
-  /// Filters proxies by location exclude list.
+  /// Filters proxies by country include list.
   /// </summary>
-  public sealed class ExcludeLocationFilter: LocationBaseFilter
+  public sealed class IncludeCountryFilter: LocationBaseFilter
   {
     public override bool DoesPassFilter(ProxyInformation proxy)
     {
       if (string.IsNullOrWhiteSpace(proxy.Country))
-        return true;
+        return false;
 
       foreach (string item in LocationItems)
         if (item.Equals(proxy.Country, StringComparison.InvariantCultureIgnoreCase))
-          return false;
+          return true;
 
-      return true;
+      return false;
     }
   }
 }
