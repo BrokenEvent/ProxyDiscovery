@@ -25,7 +25,7 @@ namespace BrokenEvent.ProxyDiscovery
       Address = address;
       Port = port;
       IsHttps = isHttps;
-      Country = country;
+      Country = CountryResolver.Resolve(country);
       City = city;
       Name = name;
       Protocol = protocol;
