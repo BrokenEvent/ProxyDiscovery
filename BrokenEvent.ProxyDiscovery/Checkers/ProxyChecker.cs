@@ -51,6 +51,23 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     {
       if (string.IsNullOrWhiteSpace(TargetUrl))
         yield return "Target URL cannot be empty";
+      else
+      {
+        Exception parsingException = null;
+
+        try
+        {
+          // ReSharper disable once ObjectCreationAsStatement
+          new Uri(TargetUrl);
+        }
+        catch (Exception e)
+        {
+          parsingException = e;
+        }
+
+        if (parsingException != null)
+          yield return parsingException.Message;
+      }
     }
 
     /// <inheritdoc />
@@ -65,6 +82,9 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     private string BuildConnectRequest()
     {
       Uri uri = new Uri(TargetUrl);
+
+      if (uri.Scheme == "http")
+        throw new NotSupportedException("HTTP urls are not supported by Proxy Checker. Please use HTTPS.");
 
       StringBuilder sb = new StringBuilder();
       sb.Append("CONNECT ").Append(uri.Host).Append(':').Append(uri.Port).Append(" HTTP/");
