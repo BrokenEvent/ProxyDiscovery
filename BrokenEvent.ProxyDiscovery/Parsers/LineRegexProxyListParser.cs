@@ -24,7 +24,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// Gets or sets the regex to parse single line.
     /// </summary>
     /// <remarks>
-    /// Parser uses named regular expression groups to get the data. Group names are:
+    /// Parser uses named regular expression groups (<c>(?&lt;name&gt;.\)</c>) to get the data. Group names are:
     /// <list type="table">
     /// <item><term>address</term><description>IP address of the proxy. Mandatory.</description></item>
     /// <item><term>port</term><description>Port number of the proxy. Mandatory.</description></item>

@@ -46,6 +46,9 @@
     <Compile Include="GoogleFilterTests.cs" />
     <Compile Include="HelpersTests.cs" />
     <Compile Include="CountryFilterTests.cs" />
+    <Compile Include="HtmlProxyListParserTests.cs" />
+    <Compile Include="LineRegexProxyListParserTests.cs" />
+    <Compile Include="LogCollector.cs" />
     <Compile Include="ProxyHttpConnectCheckerTests.cs" />
     <Compile Include="HttpRequestBuilderTests.cs" />
     <Compile Include="HttpResponseParserTests.cs" />
@@ -78,6 +81,12 @@
       <Project>{8F0A5550-9BE2-4137-B035-D98E4C123A58}</Project>
       <Name>BrokenEvent.ProxyDiscovery</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\format1.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\msword.htm" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

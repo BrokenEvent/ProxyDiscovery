@@ -22,16 +22,6 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       }
     }
 
-    public class LogCollector
-    {
-      public List<string> Errors { get; } = new List<string>();
-
-      public void AddLog(string s)
-      {
-        Errors.Add(s);
-      }
-    }
-
     public class U
     {
       public string Resource { get; }
