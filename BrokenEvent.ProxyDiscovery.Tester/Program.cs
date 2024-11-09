@@ -25,7 +25,12 @@ namespace BrokenEvent.ProxyDiscovery.Tester
           WellKnown.PubProxyProvider
         },
         Filters = { new HttpsFilter() },
-        Checker = new ProxyChecker { TargetUrl = "https://brokenevent.com", Timeout = 1000 },
+        Checker = new ProxyHttpConnectChecker
+        {
+          TargetUrl = new Uri("https://brokenevent.com"),
+          Timeout = 1000,
+          TunnelTester = new NoneTunnelTester()
+        },
       };
       discovery.LogMessage += Console.WriteLine;
       discovery.ProxyCheckComplete += Discovery_ProxyCheckComplete;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,17 +12,20 @@ using BrokenEvent.ProxyDiscovery.Interfaces;
 namespace BrokenEvent.ProxyDiscovery.Checkers
 {
   /// <summary>
-  /// Checks proxy availability by connecting with the proxy to given URL. Supports only HTTPS proxies.
+  /// Checks proxy availability by connecting with the proxy to given URL. Supports only HTTPS proxies (requires proxy to support CONNECT
+  /// HTTP method).
   /// </summary>
-  public sealed class ProxyChecker: IProxyChecker
+  public sealed class ProxyHttpConnectChecker: IProxyChecker
   {
+    private IProxyTunnelTester actualTunnelTester;
+
     private byte[] requestBytes;
 
     /// <summary>
     /// Gets or sets the target URL to check.
     /// </summary>
     /// <remarks>There will be many requests to that server, so please use server which you don't mind.</remarks>
-    public string TargetUrl { get; set; }
+    public Uri TargetUrl { get; set; }
 
     /// <summary>
     /// Gets or sets the send/receive timeout in milliseconds. The default is 0.
@@ -46,71 +48,45 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// </remarks>
     public bool GracefulCancel { get; set; } = true;
 
+    public IProxyTunnelTester TunnelTester { get; set; } = new HttpHeadTunnelTester();
+
     /// <inheritdoc />
     public IEnumerable<string> Validate()
     {
-      if (string.IsNullOrWhiteSpace(TargetUrl))
+      if (TargetUrl == null)
         yield return "Target URL cannot be empty";
-      else
-      {
-        Exception parsingException = null;
 
-        try
-        {
-          // ReSharper disable once ObjectCreationAsStatement
-          new Uri(TargetUrl);
-        }
-        catch (Exception e)
-        {
-          parsingException = e;
-        }
-
-        if (parsingException != null)
-          yield return parsingException.Message;
-      }
+      if (TunnelTester == null)
+        yield return "Tunnel tester must not be null.";
     }
 
     /// <inheritdoc />
     public void Prepare()
     {
-      if (TargetUrl == null)
-        throw new InvalidOperationException("Unable to prepare proxy checker, no target URL specified.");
+      requestBytes = HttpRequestBuilder.BuildRequest(HttpVersion, "CONNECT", TargetUrl.Host, TargetUrl.Port);
 
-      requestBytes = Encoding.ASCII.GetBytes(BuildConnectRequest());
-    }
-
-    private string BuildConnectRequest()
-    {
-      Uri uri = new Uri(TargetUrl);
-
-      if (uri.Scheme == "http")
-        throw new NotSupportedException("HTTP urls are not supported by Proxy Checker. Please use HTTPS.");
-
-      StringBuilder sb = new StringBuilder();
-      sb.Append("CONNECT ").Append(uri.Host).Append(':').Append(uri.Port).Append(" HTTP/");
-
-      switch (HttpVersion)
+      switch (TunnelTester.Protocol)
       {
-        case HttpVersion.OneZero:
-          sb.Append("1.0");
+        case TunnelTesterProtocol.Http:
+          if (TargetUrl.Scheme == "https")
+            // wrap with SSL tester
+            actualTunnelTester = new SslTunnelTester(TunnelTester);
+          else
+            // otherwise leave it as it is
+            goto default;
           break;
 
-        case HttpVersion.OneOne:
-          sb.Append("1.0");
-          break;
+        case TunnelTesterProtocol.SSL:
+          // check if we can use it
+          if (TargetUrl.Scheme == "http")
+            throw new InvalidOperationException($"Unable to use proxy tunnel tester. {TunnelTester.GetType().Name} uses SSL, but the target URL uses http.");
+          // otherwise leave it as it is
+          goto default;
 
         default:
-          throw new InvalidOperationException($"Invalid or unsupported HTTP version: {HttpVersion}");
+          actualTunnelTester = TunnelTester;
+          break;
       }
-
-      sb.Append("\r\n");
-
-      if (HttpVersion == HttpVersion.OneOne)
-        sb.Append("Host: ").Append(uri.Host).Append(':').Append(uri.Port).Append("\r\n");
-
-      sb.Append("\r\n");
-
-      return sb.ToString();
     }
 
     /// <inheritdoc />
@@ -160,16 +136,16 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
         byte[] buffer = new byte[1024];
 
         // wait for the answer
-        int recv = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
+        int received = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
 
         sw.Stop();
 
         // 0 indicates the stream is closed
-        if (recv == 0)
+        if (received == 0)
           return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, "Connection closed by the proxy server.", sw.Elapsed);
 
         // parse the response
-        ProxyResponse response = new ProxyResponse(Encoding.ASCII.GetString(buffer, 0, recv));
+        HttpResponseParser response = new HttpResponseParser(buffer, received);
 
         // is response valid?
         if (!response.IsValid)
@@ -182,8 +158,11 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
         // now we're certain that the proxy supports HTTPS
         proxy.IsHttps = true;
 
-        // and can return success
-        return new ProxyState(proxy, ProxyCheckResult.OK, response.Phrase, sw.Elapsed);
+        // test the created connection
+        TunnelTestResult tunnelTestResult = await actualTunnelTester.CheckTunnel(TargetUrl, stream, ct);
+
+        // and can return the test result
+        return new ProxyState(proxy, tunnelTestResult.Result, tunnelTestResult.Message, sw.Elapsed);
       }
       catch (SocketException e)
       {
@@ -211,48 +190,5 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
         client.Dispose();
       }
     }
-
-    private struct ProxyResponse
-    {
-      public readonly string HttpVersion;
-      public readonly int StatusCode;
-      public readonly string Phrase;
-      public readonly bool IsValid;
-
-      public ProxyResponse(string response)
-        : this()
-      {
-        // HTTP/1.0 200 Connection established\r\n\r\n
-
-        if (!response.StartsWith("HTTP/"))
-          return;
-
-        int i = 5;
-
-        HttpVersion = StringHelpers.ReadUntil(response, ref i, " ");
-        if (HttpVersion == null)
-          return;
-
-        string code = StringHelpers.ReadUntil(response, ref i, " ");
-        if (code == null || !int.TryParse(code, out StatusCode))
-          return;
-
-        Phrase = StringHelpers.ReadUntil(response, ref i, "\r\n");
-        IsValid = true;
-      }
-    }
-  }
- 
-  public enum HttpVersion
-  {
-    /// <summary>
-    /// Test on HTTP/1.0
-    /// </summary>
-    OneZero,
-    /// <summary>
-    /// Test on HTTP/1.1
-    /// </summary>
-    /// <remarks>The only difference is that Host header is required for 1.1.</remarks>
-    OneOne
   }
 }

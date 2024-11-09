@@ -21,7 +21,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Checkers\ProxyChecker.cs" />
+    <Compile Include="Helpers\HttpRequestBuilder.cs" />
+    <Compile Include="Checkers\HttpHeadTunnelTester.cs" />
+    <Compile Include="Checkers\HttpTraceTunnelTester.cs" />
+    <Compile Include="Checkers\HttpVersion.cs" />
+    <Compile Include="Checkers\NoneTunnelTester.cs" />
+    <Compile Include="Checkers\ProxyHttpConnectChecker.cs" />
+    <Compile Include="Helpers\HttpResponseParser.cs" />
+    <Compile Include="Checkers\SslTunnelTester.cs" />
     <Compile Include="CountryResolver.cs" />
     <Compile Include="Filters\ExcludeCountryFilter.cs" />
     <Compile Include="Filters\GooglePassedFilter.cs" />
@@ -40,6 +47,7 @@
     <Compile Include="Interfaces\IProxyListParser.cs" />
     <Compile Include="Interfaces\IProxyListProvider.cs" />
     <Compile Include="Interfaces\IProxyListSource.cs" />
+    <Compile Include="Interfaces\IProxyTunnelTester.cs" />
     <Compile Include="Interfaces\IValidatable.cs" />
     <Compile Include="Parsers\AbstractProxyListParser.cs" />
     <Compile Include="Parsers\CsvParser.cs" />
@@ -48,6 +56,7 @@
     <Compile Include="Parsers\LineRegexProxyListParser.cs" />
     <Compile Include="Providers\CompositeProxyProvider.cs" />
     <Compile Include="Providers\StaticProxyProvider.cs" />
+    <Compile Include="ProxyCheckResult.cs" />
     <Compile Include="ProxyDiscovery.cs" />
     <Compile Include="ProxyInformation.cs" />
     <Compile Include="ProxyState.cs" />

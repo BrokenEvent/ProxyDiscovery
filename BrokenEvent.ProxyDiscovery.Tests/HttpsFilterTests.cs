@@ -19,6 +19,11 @@ namespace BrokenEvent.ProxyDiscovery.Tests
         Proxy = new ProxyInformation("192.168.0.1", 80, https);
         AllowUnknown = allowUnknown;
       }
+
+      public override string ToString()
+      {
+        return $"Allow unknown: {AllowUnknown}, Value: {Proxy.IsHttps} → {Expected}";
+      }
     }
 
     public static readonly U[] testData = new U[]

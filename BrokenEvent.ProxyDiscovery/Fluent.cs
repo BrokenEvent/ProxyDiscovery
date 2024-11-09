@@ -50,7 +50,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// <c>true</c> to include only known HTTPS proxies, <c>false</c> to include also unknown.</param>
     /// <returns>Proxy discovery.</returns>
     /// <seealso cref="HttpsFilter"/>
-    /// <remarks>Since the <see cref="ProxyChecker"/> supports only HTTPS, if it used, <paramref name="strictHttps"/> may be set to <c>false</c> -
+    /// <remarks>Since the <see cref="ProxyHttpConnectChecker"/> supports only HTTPS, if it used, <paramref name="strictHttps"/> may be set to <c>false</c> -
     /// proxy checker will check and will not pass non-HTTPS proxies. It will also update proxy HTTPS state.</remarks>
     public static ProxyDiscovery HttpsOnly(this ProxyDiscovery discovery, bool strictHttps = true)
     {
@@ -62,11 +62,13 @@ namespace BrokenEvent.ProxyDiscovery
     /// Adds Google-passed filtering. Only proxies which are known to work with Google services will be included to search results.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
+    /// <param name="strictGoogle">Whether to exclude from search results proxies with unknown Google support state.
+    /// <c>true</c> to include only known Google-supported proxies, <c>false</c> to include also unknown.</param>
     /// <returns>Proxy discovery.</returns>
     /// <seealso cref="GooglePassedFilter"/>
-    public static ProxyDiscovery GoogleOnly(this ProxyDiscovery discovery)
+    public static ProxyDiscovery GoogleOnly(this ProxyDiscovery discovery, bool strictGoogle = true)
     {
-      discovery.Filters.Add(new GooglePassedFilter());
+      discovery.Filters.Add(new GooglePassedFilter { AllowUnknown = !strictGoogle });
       return discovery;
     }
 
@@ -111,18 +113,45 @@ namespace BrokenEvent.ProxyDiscovery
     }
 
     /// <summary>
-    /// Adds proxy check.
+    /// Adds proxy check via HTTP CONNECT. Each proxy will be tested for creating tunnels via HTTP CONNECT method. The tunnel will not be tested.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
-    /// <param name="testUrl">Target URL to check with. Only domain (and port) part is used. "http" scheme is not supported, only "https".</param>
+    /// <param name="testUrl">Target URL to check with.</param>
     /// <returns>Proxy discovery.</returns>
-    /// <seealso cref="ProxyChecker"/>
-    public static ProxyDiscovery CheckUrl(this ProxyDiscovery discovery, string testUrl)
+    /// <seealso cref="ProxyHttpConnectChecker"/>
+    /// <seealso cref="NoneTunnelTester"/>
+    public static ProxyDiscovery CheckHttpProxy(this ProxyDiscovery discovery, string testUrl)
     {
       if (string.IsNullOrWhiteSpace(testUrl))
         throw new ArgumentNullException(nameof(testUrl));
 
-      discovery.Checker = new ProxyChecker { TargetUrl = testUrl };
+      discovery.Checker = new ProxyHttpConnectChecker
+      {
+        TargetUrl = new Uri(testUrl),
+        TunnelTester = new NoneTunnelTester()
+      };
+      return discovery;
+    }
+
+    /// <summary>
+    /// Adds proxy check via HTTP CONNECT. Each proxy will be tester for creating tunnels via HTTP CONNECT method.
+    /// The tunnel created will be tested via HTTP HEAD method for the resource specified in <see cref="testUrl"/>.
+    /// </summary>
+    /// <param name="discovery">Proxy discovery.</param>
+    /// <param name="testUrl">Target URL to check with.</param>
+    /// <returns>Proxy discovery.</returns>
+    /// <seealso cref="ProxyHttpConnectChecker"/>
+    /// <seealso cref="HttpHeadTunnelTester"/>
+    public static ProxyDiscovery CheckHttpProxyHead(this ProxyDiscovery discovery, string testUrl)
+    {
+      if (string.IsNullOrWhiteSpace(testUrl))
+        throw new ArgumentNullException(nameof(testUrl));
+
+      discovery.Checker = new ProxyHttpConnectChecker
+      {
+        TargetUrl = new Uri(testUrl),
+        TunnelTester = new HttpHeadTunnelTester()
+      };
       return discovery;
     }
 
