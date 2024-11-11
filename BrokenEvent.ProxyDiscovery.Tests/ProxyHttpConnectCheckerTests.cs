@@ -245,15 +245,15 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       try
       {
 
-        ProxyHttpConnectChecker checker = new ProxyHttpConnectChecker
+        ProxyChecker checker = new ProxyChecker
         {
           TargetUrl = new Uri(u.Target),
           TunnelTester = u.TunnelTester,
-          HttpVersion = u.Version
         };
+        checker.AddProtocolChecker("http", new HttpConnectChecker { HttpVersion = u.Version });
 
         checker.Prepare();
-        ProxyState state = await checker.CheckProxy(new ProxyInformation("127.0.0.1", (ushort)u.Port), CancellationToken.None);
+        ProxyState state = await checker.CheckProxy(new ProxyInformation("127.0.0.1", (ushort)u.Port, "http"), CancellationToken.None);
 
         if (u.Server != null)
           Assert.IsNull(u.Server.Error);

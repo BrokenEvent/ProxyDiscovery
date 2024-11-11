@@ -21,25 +21,30 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Checkers\HttpConnectChecker.cs" />
+    <Compile Include="Checkers\Socks4Checker.cs" />
+    <Compile Include="Checkers\Socks5Checker.cs" />
     <Compile Include="Helpers\HttpRequestBuilder.cs" />
     <Compile Include="Checkers\HttpHeadTunnelTester.cs" />
     <Compile Include="Checkers\HttpTraceTunnelTester.cs" />
     <Compile Include="Checkers\HttpVersion.cs" />
     <Compile Include="Checkers\NoneTunnelTester.cs" />
-    <Compile Include="Checkers\ProxyHttpConnectChecker.cs" />
+    <Compile Include="Checkers\ProxyChecker.cs" />
     <Compile Include="Helpers\HttpResponseParser.cs" />
     <Compile Include="Checkers\SslTunnelTester.cs" />
     <Compile Include="CountryResolver.cs" />
     <Compile Include="Filters\ExcludeCountryFilter.cs" />
     <Compile Include="Filters\GooglePassedFilter.cs" />
-    <Compile Include="Filters\HttpsFilter.cs" />
+    <Compile Include="Filters\SSLFilter.cs" />
     <Compile Include="Filters\IncludeCountryFilter.cs" />
-    <Compile Include="Filters\LocationBaseFilter.cs" />
+    <Compile Include="Filters\BaseCountryFilter.cs" />
     <Compile Include="Filters\PortFilter.cs" />
     <Compile Include="Filters\ProtocolFilter.cs" />
     <Compile Include="Fluent.cs" />
     <Compile Include="Helpers\ListHelpers.cs" />
     <Compile Include="Helpers\PortSetParser.cs" />
+    <Compile Include="Helpers\Socks4Builder.cs" />
+    <Compile Include="Helpers\Socks5Parser.cs" />
     <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Helpers\TaskQueue.cs" />
     <Compile Include="Interfaces\IProxyChecker.cs" />
@@ -47,8 +52,10 @@
     <Compile Include="Interfaces\IProxyListParser.cs" />
     <Compile Include="Interfaces\IProxyListProvider.cs" />
     <Compile Include="Interfaces\IProxyListSource.cs" />
+    <Compile Include="Interfaces\IProxyProtocolChecker.cs" />
     <Compile Include="Interfaces\IProxyTunnelTester.cs" />
     <Compile Include="Interfaces\IValidatable.cs" />
+    <Compile Include="Interfaces\TestResult.cs" />
     <Compile Include="Parsers\AbstractProxyListParser.cs" />
     <Compile Include="Parsers\CsvParser.cs" />
     <Compile Include="Parsers\CsvProxyListParser.cs" />

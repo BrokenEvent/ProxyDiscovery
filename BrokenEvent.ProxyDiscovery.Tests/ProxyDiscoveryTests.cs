@@ -14,20 +14,20 @@ namespace BrokenEvent.ProxyDiscovery.Tests
   class ProxyDiscoveryTests
   {
    
-    private StaticProxyProvider testProvider = new StaticProxyProvider()
+    private StaticProxyProvider testProvider = new StaticProxyProvider
     {
-      /*0*/ new ProxyInformation("192.168.0.1", 80, true, true, null, null, "test"),  // HTTPS, Google
-      /*1*/ new ProxyInformation("192.168.0.2", 180, false, true, null, null, "test"),  // not HTTPS, Google
-      /*2*/ new ProxyInformation("192.168.0.3", 280, true, false, null, null, "test"),  // HTTPS, not Google
-      /*3*/ new ProxyInformation("192.168.0.4", 380, null, true, null, null, "test"),  // n/a, not Google
-      /*4*/ new ProxyInformation("192.168.0.5", 480, true, null, null, null, "test"),  // HTTPS, n/a
-      /*5*/ new ProxyInformation("192.168.0.1", 580, true, true, null, null, "debug"),
+      /*0*/ new ProxyInformation("192.168.0.1", 80, "http", true, true, country: "test"),  // HTTPS, Google
+      /*1*/ new ProxyInformation("192.168.0.2", 180, "http", false, true, country: "test"),  // not HTTPS, Google
+      /*2*/ new ProxyInformation("192.168.0.3", 280, "http", true, false, country: "test"),  // HTTPS, not Google
+      /*3*/ new ProxyInformation("192.168.0.4", 380, "http", null, true, country: "test"),  // n/a, not Google
+      /*4*/ new ProxyInformation("192.168.0.5", 480, "http", true, null, country: "test"),  // HTTPS, n/a
+      /*5*/ new ProxyInformation("192.168.0.1", 580, "http", true, true, country: "debug"),
     };
 
     private IEnumerable<ProxyState> BuildStates(params int[] indexes)
     {
       for (int i = 0; i < indexes.Length; i++)
-        yield return new ProxyState(testProvider.Proxies[indexes[i]], ProxyCheckResult.Unckeched, "test", TimeSpan.Zero);
+        yield return new ProxyState(testProvider.Proxies[indexes[i]], ProxyCheckResult.Unchecked, "test", TimeSpan.Zero);
     }
 
     [Test]
@@ -50,7 +50,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       ProxyDiscovery discovery = new ProxyDiscovery
       {
         Providers = { testProvider },
-        Filters = { new HttpsFilter() },
+        Filters = { new SSLFilter() },
         MaxThreads = 1
       };
 
@@ -80,7 +80,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       ProxyDiscovery discovery = new ProxyDiscovery
       {
         Providers = { testProvider },
-        Filters = { new HttpsFilter(), new PortFilter { FilterString = "50-300, 500-1000" } },
+        Filters = { new SSLFilter(), new PortFilter { FilterString = "50-300, 500-1000" } },
         MaxThreads = 1
       };
 
@@ -95,7 +95,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       ProxyDiscovery discovery = new ProxyDiscovery
       {
         Providers = { testProvider },
-        Filters = { new HttpsFilter(), new IncludeCountryFilter { Locations = "test" } },
+        Filters = { new SSLFilter(), new IncludeCountryFilter { Countries = "test" } },
         MaxThreads = 1
       };
 

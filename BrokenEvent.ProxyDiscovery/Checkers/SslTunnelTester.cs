@@ -21,7 +21,7 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
     public IProxyTunnelTester InnerTester { get; }
 
-    public async Task<TunnelTestResult> CheckTunnel(Uri uri, Stream stream, CancellationToken ct)
+    public async Task<TestResult> TestTunnel(Uri uri, Stream stream, CancellationToken ct)
     {
       // create wrapper stream
       SslStream sslStream = null;
@@ -42,14 +42,14 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
         // now it's time to check whether there is a cancel request
         if (ct.IsCancellationRequested)
-          return new TunnelTestResult(ProxyCheckResult.Canceled, "Tunnel check has been canceled");
+          return new TestResult(ProxyCheckResult.Canceled, "Tunnel check has been canceled");
 
         // process inner check
-        return await InnerTester.CheckTunnel(uri, sslStream, ct);
+        return await InnerTester.TestTunnel(uri, sslStream, ct);
       }
       catch (AuthenticationException e)
       {
-        return new TunnelTestResult(ProxyCheckResult.SSLError, e.Message);
+        return new TestResult(ProxyCheckResult.SSLError, e.Message);
       }
       finally
       {

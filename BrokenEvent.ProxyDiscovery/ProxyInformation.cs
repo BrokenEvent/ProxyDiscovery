@@ -9,26 +9,28 @@ namespace BrokenEvent.ProxyDiscovery
   public sealed class ProxyInformation: IEquatable<ProxyInformation>
   {
     public ProxyInformation(
-      IPAddress address,
-      ushort port,
-      bool? isHttps = null,
-      bool? isGooglePassed = null,
-      string protocol = null,
-      string name = null,
-      string country = null,
-      string city = null
+        IPAddress address,
+        ushort port,
+        string protocol,
+        bool? isSsl = null,
+        bool? isGooglePassed = null,
+        string name = null,
+        string country = null,
+        string city = null
       )
     {
       if (address == null)
         throw new ArgumentNullException(nameof(address));
+      if (string.IsNullOrWhiteSpace(protocol))
+        throw new ArgumentNullException(nameof(protocol));
 
       Address = address;
       Port = port;
-      IsHttps = isHttps;
+      IsSSL = isSsl;
       Country = CountryResolver.Resolve(country);
       City = city;
       Name = name;
-      Protocol = protocol;
+      Protocol = protocol.ToLower();
       IsGooglePassed = isGooglePassed;
       Server = ServiceDetector.DetectService(port);
     }
@@ -36,14 +38,23 @@ namespace BrokenEvent.ProxyDiscovery
     public ProxyInformation(
         string address,
         ushort port,
-        bool? isHttps = null,
+        string protocol,
+        bool? isSsl = null,
         bool? isGooglePassed = null,
-        string protocol = null,
         string name = null,
         string country = null,
         string city = null
-      ) :
-      this(IPAddress.Parse(address), port, isHttps, isGooglePassed, protocol, name, country, city)
+      )
+      : this(
+          IPAddress.Parse(address),
+          port,
+          protocol,
+          isSsl,
+          isGooglePassed,
+          name,
+          country,
+          city
+        )
     {
     }
 
@@ -58,17 +69,18 @@ namespace BrokenEvent.ProxyDiscovery
     public ushort Port { get; }
 
     /// <summary>
-    /// Gets or sets the value indicating whether the proxy supports HTTPS.
+    /// Gets or sets the value indicating whether the proxy supports SSL/TCP tunnelling.
     /// </summary>
-    public bool? IsHttps { get; set; }
+    public bool? IsSSL { get; set; }
 
     /// <summary>
-    /// Gets the proxy protocol, if known.
+    /// Gets the proxy protocol.
     /// </summary>
+    /// <remarks>Protocol uses lowercase names like: http, socks4, etc.</remarks>
     public string Protocol { get; }
 
     /// <summary>
-    /// Gets or sets the value indicating whether the proxy can use Google search.
+    /// Gets or sets the value indicating whether the proxy can be passed to the Google services.
     /// </summary>
     public bool? IsGooglePassed { get; set; }
 
@@ -91,22 +103,17 @@ namespace BrokenEvent.ProxyDiscovery
     {
       StringBuilder sb = new StringBuilder();
       sb.Append(Address).Append(":").Append(Port);
+      sb.AppendItem("Protocol", Protocol);
 
-      if (IsHttps.HasValue)
-        sb.AppendItem(IsHttps.Value ? "HTTPS" : "HTTP");
+      if (IsSSL.HasValue)
+        sb.AppendItem(IsSSL.Value ? "SSL" : "non-SSL");
 
       if (IsGooglePassed.HasValue)
         sb.AppendItem("Google", IsGooglePassed.Value ? "yes" : "no");
 
-      if (Protocol != null)
-        sb.AppendItem("Protocol", Protocol);
-
-      if (Name != null)
-        sb.AppendItem("Name", Name);
-      if (Country != null)
-        sb.AppendItem("Country", Country);
-      if (City != null)
-        sb.AppendItem("City", City);
+      sb.AppendItem("Name", Name);
+      sb.AppendItem("Country", Country);
+      sb.AppendItem("City", City);
 
       return sb.ToString();
     }

@@ -13,31 +13,19 @@ namespace BrokenEvent.ProxyDiscovery.Interfaces
   public interface IProxyTunnelTester
   {
     /// <summary>
-    /// Checks the TCP tunnel created by proxy.
+    /// Tests the TCP tunnel created by proxy.
     /// </summary>
-    /// <param name="uri">Target URL set by user to check.</param>
+    /// <param name="uri">The URL of the test target.</param>
     /// <param name="stream">TCP tunnel stream.</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Proxy check result.</returns>
-    /// <remarks>The method can freely throw exceptions as they will be handled in <see cref="ProxyHttpConnectChecker.CheckProxy"/>.</remarks>
-    Task<TunnelTestResult> CheckTunnel(Uri uri, Stream stream, CancellationToken ct);
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>TCP tunnel test result.</returns>
+    /// <remarks>The method can freely throw exceptions as they will be handled in <see cref="ProxyChecker.CheckProxy"/>.</remarks>
+    Task<TestResult> TestTunnel(Uri uri, Stream stream, CancellationToken ct);
 
     /// <summary>
     /// Gets the protocol rules for the tunnel tester.
     /// </summary>
     TunnelTesterProtocol Protocol { get; }
-  }
-
-  public struct TunnelTestResult
-  {
-    public ProxyCheckResult Result;
-    public string Message;
-
-    public TunnelTestResult(ProxyCheckResult result, string message)
-    {
-      Result = result;
-      Message = message;
-    }
   }
 
   /// <summary>

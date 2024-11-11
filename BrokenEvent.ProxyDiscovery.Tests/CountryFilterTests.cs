@@ -46,9 +46,9 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     public void ParsingPositive(P p)
     {
       IncludeCountryFilter filter = new IncludeCountryFilter();
-      filter.Locations = p.Actual;
+      filter.Countries = p.Actual;
 
-      Assert.AreEqual(p.Expected, filter.Locations);
+      Assert.AreEqual(p.Expected, filter.Countries);
     }
 
     public class U
@@ -85,10 +85,10 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(includeFilterValues))]
     public void IncludeFilter(U u)
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
+      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, "http", true, null, null, u.Value);
 
       IncludeCountryFilter filter = new IncludeCountryFilter();
-      filter.Locations = u.Filter;
+      filter.Countries = u.Filter;
 
       Assert.False(filter.Validate().GetEnumerator().MoveNext());
 
@@ -110,10 +110,10 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(excludeFilterValues))]
     public void ExcludeFilter(U u)
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, true, null, null, null, u.Value);
+      ProxyInformation proxy = new ProxyInformation("192.168.0.1", 80, "http", true, null, null, u.Value);
 
       ExcludeCountryFilter filter = new ExcludeCountryFilter();
-      filter.Locations = u.Filter;
+      filter.Countries = u.Filter;
 
       Assert.False(filter.Validate().GetEnumerator().MoveNext());
 

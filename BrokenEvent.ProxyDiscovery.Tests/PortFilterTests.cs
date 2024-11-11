@@ -172,7 +172,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(filterValues))]
     public void Filter(U u)
     {
-      ProxyInformation proxy = new ProxyInformation("192.168.0.1", u.Port, true);
+      ProxyInformation proxy = new ProxyInformation("192.168.0.1", u.Port, "http", true);
 
       PortFilter filter = new PortFilter();
       filter.FilterString = u.Filter;

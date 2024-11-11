@@ -405,7 +405,7 @@ namespace BrokenEvent.ProxyDiscovery
       {
         foreach (ProxyInformation proxy in proxiesList)
         {
-          results.Add(new ProxyState(proxy, ProxyCheckResult.Unckeched, "Not checked", TimeSpan.Zero));
+          results.Add(new ProxyState(proxy, ProxyCheckResult.Unchecked, "Not checked", TimeSpan.Zero));
 
           if (maxResults > 0 && results.Count >= maxResults)
             break;

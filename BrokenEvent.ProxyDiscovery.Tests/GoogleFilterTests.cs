@@ -16,7 +16,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       public U(bool expected, bool? google, bool allowUnknown)
       {
         Expected = expected;
-        Proxy = new ProxyInformation("192.168.0.1", 80, isGooglePassed: google);
+        Proxy = new ProxyInformation("192.168.0.1", 80, "http", isGooglePassed: google);
         AllowUnknown = allowUnknown;
       }
 

@@ -92,9 +92,10 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           CountryColumn = 3,
           CityColumn = 4,
           ProtocolColumn = 5,
-          IsHttpsColumn = 7,
+          IsSSLColumn = 7,
           NameColumn = 8,
           GooglePassedColumn = 9,
+          DefaultProtocol = "http"
         }),
       new U(
         "semicolon_header_endpoint_spec",
@@ -104,19 +105,23 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           CountryColumn = 1,
           CityColumn = 2,
           ProtocolColumn = 4,
-          IsHttpsColumn = 6,
+          IsSSLColumn = 6,
           NameColumn = 7,
           GooglePassedColumn = 8,
+          DefaultProtocol = "http"
         }),
     };
 
     [TestCaseSource(nameof(fullTestsData))]
     public void FullTest(U u)
     {
+      // no validation errors
+      Assert.False(u.Parser.Validate().GetEnumerator().MoveNext());
+
       LogCollector lc = new LogCollector();
       List<ProxyInformation> list = new List<ProxyInformation>(u.Parser.ParseContent(LoadResource(u.Resource), lc.AddLog));
 
-      Assert.AreEqual(1, lc.Errors.Count);  // header cannot be parsed
+      Assert.AreEqual(1, lc.Errors.Count, "errors count");  // header cannot be parsed
 
       Assert.AreEqual(3, list.Count);
       Assert.AreEqual("192.168.0.1", list[0].Address.ToString());
@@ -125,27 +130,27 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       Assert.AreEqual("USA", list[0].Country);
       Assert.AreEqual("Washington", list[0].City);
       Assert.AreEqual("President Personal Server", list[0].Name);
-      Assert.IsTrue(list[0].IsHttps);
+      Assert.IsTrue(list[0].IsSSL);
       Assert.IsFalse(list[0].IsGooglePassed);
 
       Assert.AreEqual(3, list.Count);
       Assert.AreEqual("192.168.0.2", list[1].Address.ToString());
       Assert.AreEqual(8081, list[1].Port);
-      Assert.AreEqual("http", list[1].Protocol);
+      Assert.AreEqual("socks4", list[1].Protocol);
       Assert.AreEqual("USA", list[1].Country);
       Assert.AreEqual("Washington", list[1].City);
       Assert.AreEqual("Common Militrary proxy", list[1].Name);
-      Assert.IsTrue(list[1].IsHttps);
+      Assert.IsTrue(list[1].IsSSL);
       Assert.IsFalse(list[1].IsGooglePassed);
 
       Assert.AreEqual(3, list.Count);
       Assert.AreEqual("192.168.198.50", list[2].Address.ToString());
       Assert.AreEqual(6666, list[2].Port);
-      Assert.IsNull(list[2].Protocol);
+      Assert.AreEqual("http", list[2].Protocol);
       Assert.AreEqual("Russia", list[2].Country);
       Assert.AreEqual("Moscow", list[2].City);
       Assert.IsNull(list[2].Name);
-      Assert.IsFalse(list[2].IsHttps);
+      Assert.IsFalse(list[2].IsSSL);
       Assert.IsTrue(list[2].IsGooglePassed);
     }
   }

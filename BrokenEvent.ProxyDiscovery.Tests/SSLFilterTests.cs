@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace BrokenEvent.ProxyDiscovery.Tests
 {
   [TestFixture]
-  class HttpsFilterTests
+  class SSLFilterTests
   {
     public class U
     {
@@ -16,13 +16,13 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       public U(bool expected, bool? https, bool allowUnknown)
       {
         Expected = expected;
-        Proxy = new ProxyInformation("192.168.0.1", 80, https);
+        Proxy = new ProxyInformation("192.168.0.1", 80, "http", https);
         AllowUnknown = allowUnknown;
       }
 
       public override string ToString()
       {
-        return $"Allow unknown: {AllowUnknown}, Value: {Proxy.IsHttps} → {Expected}";
+        return $"Allow unknown: {AllowUnknown}, Value: {Proxy.IsSSL} → {Expected}";
       }
     }
 
@@ -38,9 +38,9 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     };
 
     [TestCaseSource(nameof(testData))]
-    public void TestHttpsFilter(U u)
+    public void TestSSLFilter(U u)
     {
-      HttpsFilter filter = new HttpsFilter {AllowUnknown = u.AllowUnknown};
+      SSLFilter filter = new SSLFilter {AllowUnknown = u.AllowUnknown};
       
       Assert.False(filter.Validate().GetEnumerator().MoveNext());
       Assert.AreEqual(u.Expected, filter.DoesPassFilter(u.Proxy));

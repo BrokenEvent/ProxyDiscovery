@@ -41,10 +41,10 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public int? EndpointColumn { get; set; }
 
     /// <summary>
-    /// Gets or sets zero-based number of column containing the value indicating whether the proxy server supports HTTPS.
+    /// Gets or sets zero-based number of column containing the value indicating whether the proxy server supports SSL.
     /// </summary>
     /// <remarks>Values "1", "yes", "true" and "+" (case-insensitive) are treated as <c>true</c>, other values are treated as <c>false</c></remarks>
-    public int? IsHttpsColumn { get; set; }
+    public int? IsSSLColumn { get; set; }
 
     /// <summary>
     /// Gets or sets zero-based number of column containing the value indicating whether the proxy server is google-passed.
@@ -77,6 +77,9 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     {
       if (!EndpointColumn.HasValue && IpColumn == PortColumn)
         yield return "IP column and Port column numbers cannot be equal";
+
+      if (string.IsNullOrWhiteSpace(DefaultProtocol) && !ProtocolColumn.HasValue)
+        yield return "Neither the default protocol, nor protocol column are not specified";
     }
 
     private static string GetRow(IReadOnlyList<string> cols, int index, Action<string> onError, string entity)
@@ -98,7 +101,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       if (index.Value < 0 || index.Value >= cols.Count)
         return defaultValue;
 
-      return cols[index.Value];
+      return string.IsNullOrWhiteSpace(cols[index.Value]) ? defaultValue : cols[index.Value];
     }
 
     private static bool? GetRowBool(IReadOnlyList<string> cols, int? index, bool? defaultValue)
@@ -158,13 +161,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
       return new ProxyInformation(
           address,
           port,
-          GetRowBool(cols, IsHttpsColumn, DefaultHttps),
-          GetRowBool(cols, GooglePassedColumn, DefaultGoogle),
           GetRow(cols, ProtocolColumn, DefaultProtocol),
+          GetRowBool(cols, IsSSLColumn, DefaultSSL),
+          GetRowBool(cols, GooglePassedColumn, DefaultGoogle),
           GetRow(cols, NameColumn),
           GetRow(cols, CountryColumn),
-          GetRow(cols, CityColumn)
-        );
+          GetRow(cols, CityColumn));
     }
 
     private static char GetSeparator(string firstLine, CsvSeparator separator)

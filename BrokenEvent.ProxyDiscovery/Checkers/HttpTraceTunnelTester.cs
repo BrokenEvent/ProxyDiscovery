@@ -15,7 +15,7 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
   /// 405 Method Not Allowed error, this still means the connection is operational.</remarks>
   public class HttpTraceTunnelTester : IProxyTunnelTester
   {
-    public async Task<TunnelTestResult> CheckTunnel(Uri uri, Stream stream, CancellationToken ct)
+    public async Task<TestResult> TestTunnel(Uri uri, Stream stream, CancellationToken ct)
     {
       // build request
       byte[] request = HttpRequestBuilder.BuildRequest(
@@ -31,29 +31,29 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
       // now it's time to check whether there is a cancel request
       if (ct.IsCancellationRequested)
-        return new TunnelTestResult(ProxyCheckResult.Canceled, "Tunnel check has been canceled");
+        return new TestResult(ProxyCheckResult.Canceled, "Tunnel check has been canceled");
 
       // read response
       byte[] buffer = new byte[1000];
       int received = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
 
       if (received == 0)
-        return new TunnelTestResult(ProxyCheckResult.ServiceRefused, "Connection closed during target response receiving.");
+        return new TestResult(ProxyCheckResult.ServiceRefused, "Connection closed during target response receiving.");
 
       // parse it
       HttpResponseParser response = new HttpResponseParser(buffer, received);
 
       // is valid/parsable?
       if (!response.IsValid)
-        return new TunnelTestResult(ProxyCheckResult.UnparsableResponse, "Couldn't parse target server's response.");
+        return new TestResult(ProxyCheckResult.UnparsableResponse, "Couldn't parse target server's response.");
 
       // error HTTP response is counted as ok because it still means the connection is operational
       // frequent case would be 405 Method Not Allowed which means server does not support TRACE requests.
       if (response.StatusCode >= 400)
-        return new TunnelTestResult(ProxyCheckResult.OK, $"Target server responds with error: {response.StatusCode} {response.Phrase}");
+        return new TestResult(ProxyCheckResult.OK, $"Target server responds with error: {response.StatusCode} {response.Phrase}");
 
       // well' nothing more to check, return success
-      return new TunnelTestResult(ProxyCheckResult.OK, response.Phrase);
+      return new TestResult(ProxyCheckResult.OK, response.Phrase);
     }
 
     public TunnelTesterProtocol Protocol

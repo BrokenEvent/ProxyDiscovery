@@ -12,9 +12,9 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
   /// </summary>
   public class NoneTunnelTester: IProxyTunnelTester
   {
-    public Task<TunnelTestResult> CheckTunnel(Uri uri, Stream stream, CancellationToken ct)
+    public Task<TestResult> TestTunnel(Uri uri, Stream stream, CancellationToken ct)
     {
-      return Task.FromResult(new TunnelTestResult(ProxyCheckResult.OK, "Tunnel not checked"));
+      return Task.FromResult(new TestResult(ProxyCheckResult.OK, "Tunnel not checked"));
     }
 
     public TunnelTesterProtocol Protocol

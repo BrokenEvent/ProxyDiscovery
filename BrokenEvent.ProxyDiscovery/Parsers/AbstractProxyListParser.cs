@@ -15,11 +15,11 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     public string DefaultProtocol { get; set; }
 
     /// <summary>
-    /// Gets or sets the default value for HTTPS support.
+    /// Gets or sets the default value for SSL support.
     /// This is used when we know all the proxies have the same settings which can't be determined from the data parsed.
     /// </summary>
     /// <remarks>May be <c>null</c>.</remarks>
-    public bool? DefaultHttps { get; set; }
+    public bool? DefaultSSL { get; set; }
 
     /// <summary>
     /// Gets or sets the default value for Google support.

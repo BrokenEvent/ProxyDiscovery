@@ -6,7 +6,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-using BrokenEvent.ProxyDiscovery.Helpers;
 using BrokenEvent.ProxyDiscovery.Interfaces;
 
 namespace BrokenEvent.ProxyDiscovery.Checkers
@@ -15,11 +14,11 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
   /// Checks proxy availability by connecting with the proxy to given URL. Supports only HTTPS proxies (requires proxy to support CONNECT
   /// HTTP method).
   /// </summary>
-  public sealed class ProxyHttpConnectChecker: IProxyChecker
+  public sealed class ProxyChecker: IProxyChecker
   {
-    private IProxyTunnelTester actualTunnelTester;
+    private readonly Dictionary<string, IProxyProtocolChecker> protocols = new Dictionary<string, IProxyProtocolChecker>();
 
-    private byte[] requestBytes;
+    private IProxyTunnelTester actualTunnelTester;
 
     /// <summary>
     /// Gets or sets the target URL to check.
@@ -33,11 +32,6 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     public int Timeout { get; set; }
 
     /// <summary>
-    /// Gets or sets the HTTP version to check with.
-    /// </summary>
-    public HttpVersion HttpVersion { get; set; } = HttpVersion.OneOne;
-
-    /// <summary>
     /// Gets or sets the value indicating whether to cancel gracefully.
     /// </summary>
     /// <remarks>
@@ -47,6 +41,36 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// In worst cases this may take up to several tens of seconds to completely cancel the proxy discovery.</para>
     /// </remarks>
     public bool GracefulCancel { get; set; } = true;
+
+    /// <summary>
+    /// Adds a checker for a specific protocol.
+    /// </summary>
+    /// <param name="protocol">Lowercase name of the protocol (<see cref="ProxyInformation.Protocol"/>): http, socks4, etc.</param>
+    /// <param name="checker">An instance of checker for given protocol.</param>
+    /// <seealso cref="GetProtocolChecker"/>
+    public void AddProtocolChecker(string protocol, IProxyProtocolChecker checker)
+    {
+      if (protocol == null)
+        throw new ArgumentNullException(nameof(protocol));
+      if (checker == null)
+        throw new ArgumentNullException(nameof(checker));
+
+      protocols[protocol.ToLower()] = checker;
+    }
+
+    /// <summary>
+    /// Gets the protocol checker for given protocol by its name.
+    /// </summary>
+    /// <param name="protocol">Lowercase name of the protocol (<see cref="ProxyInformation.Protocol"/>): http, socks4, etc.</param>
+    /// <returns>The instance of checker for given protocol or <c>null</c> if no checker for such protocol registered.</returns>
+    /// <seealso cref="AddProtocolChecker"/>
+    public IProxyProtocolChecker GetProtocolChecker(string protocol)
+    {
+      if (string.IsNullOrWhiteSpace(protocol))
+        return null;
+
+      return protocols.TryGetValue(protocol, out IProxyProtocolChecker checker) ? checker : null;
+    }
 
     /// <summary>
     /// Gets or sets the proxy tunnel tester.
@@ -62,17 +86,29 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     public IEnumerable<string> Validate()
     {
       if (TargetUrl == null)
-        yield return "Target URL cannot be empty";
+        yield return "Target URL cannot be empty.";
 
       if (TunnelTester == null)
         yield return "Tunnel tester must not be null.";
+      else if (TargetUrl.Scheme == "http" && TunnelTester.Protocol == TunnelTesterProtocol.SSL)
+        yield return $"The tunnel tester {TunnelTester.GetType().Name} uses SSL, but the target URL uses http scheme.";
+
+      if (protocols.Count == 0)
+        yield return "No protocol checkers provided";
+      else
+        foreach (IProxyProtocolChecker checker in protocols.Values)
+          foreach (string s in checker.Validate())
+            yield return s;
     }
 
     /// <inheritdoc />
     public void Prepare()
     {
-      requestBytes = HttpRequestBuilder.BuildRequest(HttpVersion, "CONNECT", TargetUrl.Host, TargetUrl.Port);
+      // run prepare for per-protocol checkers
+      foreach (IProxyProtocolChecker checker in protocols.Values)
+        checker.Prepare(TargetUrl);
 
+      // process the tunnel tester
       switch (TunnelTester.Protocol)
       {
         case TunnelTesterProtocol.Http:
@@ -85,10 +121,7 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
           break;
 
         case TunnelTesterProtocol.SSL:
-          // check if we can use it
-          if (TargetUrl.Scheme == "http")
-            throw new InvalidOperationException($"Unable to use proxy tunnel tester. {TunnelTester.GetType().Name} uses SSL, but the target URL uses http.");
-          // otherwise leave it as it is
+          // the compatibility is checked in Validate()
           goto default;
 
         default:
@@ -100,15 +133,19 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
     /// <inheritdoc />
     public async Task<ProxyState> CheckProxy(ProxyInformation proxy, CancellationToken ct)
     {
-      if (requestBytes == null)
-        throw new InvalidOperationException("Proxy checker not initialized, consider Prepare() call.");
-
-      if (proxy.IsHttps.HasValue && !proxy.IsHttps.Value)
-        return new ProxyState(proxy, ProxyCheckResult.Unckeched, "ProxyChecker doesn't support non-HTTPS proxies", TimeSpan.Zero);
-
       // respect the cancellation token
       if (ct.IsCancellationRequested)
         return new ProxyState(proxy, ProxyCheckResult.Canceled, "Check has been canceled", TimeSpan.Zero);
+
+      if (string.IsNullOrWhiteSpace(proxy.Protocol))
+        return new ProxyState(proxy, ProxyCheckResult.Unchecked, "Cannot check proxy with unknown protocol", TimeSpan.Zero);
+
+      // get the checker for proxy's protocol
+      IProxyProtocolChecker protocolChecker = GetProtocolChecker(proxy.Protocol);
+
+      // check it is not null
+      if (protocolChecker == null)
+        return new ProxyState(proxy, ProxyCheckResult.Unchecked, $"Unable to get protocol checker for {proxy.Protocol}", TimeSpan.Zero);
 
       TcpClient client = new TcpClient();
       client.LingerState.Enabled = false;
@@ -134,40 +171,19 @@ namespace BrokenEvent.ProxyDiscovery.Checkers
 
         NetworkStream stream = client.GetStream();
 
-        // send the CONNECT request
-        await stream.WriteAsync(requestBytes, 0, requestBytes.Length, ct);
+        // test the connection depending on protocol
+        TestResult protocolTestResult = await protocolChecker.TestConnection(TargetUrl, proxy, stream, ct);
+
+        // in case of protocol test failed
+        if (protocolTestResult.Result != ProxyCheckResult.OK)
+          return new ProxyState(proxy, protocolTestResult.Result, protocolTestResult.Message, sw.Elapsed);
 
         // respect the cancellation token
         if (ct.IsCancellationRequested)
           return new ProxyState(proxy, ProxyCheckResult.Canceled, "Check has been canceled", TimeSpan.Zero);
 
-        byte[] buffer = new byte[1024];
-
-        // wait for the answer
-        int received = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
-
-        sw.Stop();
-
-        // 0 indicates the stream is closed
-        if (received == 0)
-          return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, "Connection closed by the proxy server.", sw.Elapsed);
-
-        // parse the response
-        HttpResponseParser response = new HttpResponseParser(buffer, received);
-
-        // is response valid?
-        if (!response.IsValid)
-          return new ProxyState(proxy, ProxyCheckResult.UnparsableResponse, "Couldn't parse proxy response.", sw.Elapsed);
-
-        // if the status OK? all 2xx codes are counted as OK.
-        if (response.StatusCode < 200 || response.StatusCode >= 300)
-          return new ProxyState(proxy, ProxyCheckResult.ServiceRefused, $"Proxy status: {response.StatusCode} {response.Phrase}", sw.Elapsed);
-
-        // now we're certain that the proxy supports HTTPS
-        proxy.IsHttps = true;
-
-        // test the created connection
-        TunnelTestResult tunnelTestResult = await actualTunnelTester.CheckTunnel(TargetUrl, stream, ct);
+        // test the tunnel created by protocol
+        TestResult tunnelTestResult = await actualTunnelTester.TestTunnel(TargetUrl, stream, ct);
 
         // and can return the test result
         return new ProxyState(proxy, tunnelTestResult.Result, tunnelTestResult.Message, sw.Elapsed);

@@ -8,7 +8,7 @@
     /// <summary>
     /// Proxy availability check was not performed.
     /// </summary>
-    Unckeched = -1,
+    Unchecked = -1,
     /// <summary>
     /// Proxy is available and working.
     /// </summary>

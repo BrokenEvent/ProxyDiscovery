@@ -22,7 +22,7 @@ namespace BrokenEvent.ProxyDiscovery
       if (string.IsNullOrWhiteSpace(countries))
         throw new ArgumentNullException(nameof(countries));
 
-      discovery.Filters.Add(new IncludeCountryFilter { Locations = countries });
+      discovery.Filters.Add(new IncludeCountryFilter { Countries = countries });
       return discovery;
     }
 
@@ -38,23 +38,22 @@ namespace BrokenEvent.ProxyDiscovery
       if (string.IsNullOrWhiteSpace(countries))
         throw new ArgumentNullException(nameof(countries));
 
-      discovery.Filters.Add(new ExcludeCountryFilter { Locations = countries });
+      discovery.Filters.Add(new ExcludeCountryFilter { Countries = countries });
       return discovery;
     }
 
     /// <summary>
-    /// Adds SSL filtering. Only proxies which support HTTPS/SSL will be included to the search results.
+    /// Adds SSL filtering. Only proxies which support SSL will be included to the search results.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
-    /// <param name="strictHttps">Whether to exclude from search results proxies with unknown HTTPS state.
-    /// <c>true</c> to include only known HTTPS proxies, <c>false</c> to include also unknown.</param>
+    /// <param name="strictHttps">Whether to exclude from search results proxies with unknown SSL state.
+    /// <c>true</c> to include only known SSL proxies, <c>false</c> to include also unknown.</param>
     /// <returns>Proxy discovery.</returns>
-    /// <seealso cref="HttpsFilter"/>
-    /// <remarks>Since the <see cref="ProxyHttpConnectChecker"/> supports only HTTPS, if it used, <paramref name="strictHttps"/> may be set to <c>false</c> -
-    /// proxy checker will check and will not pass non-HTTPS proxies. It will also update proxy HTTPS state.</remarks>
-    public static ProxyDiscovery HttpsOnly(this ProxyDiscovery discovery, bool strictHttps = true)
+    /// <seealso cref="SSLFilter"/>
+    /// <remarks>This is only useful when we work with HTTP proxies as SOCKS4/5 are tunnel-oriented and hence support SSL by default.</remarks>
+    public static ProxyDiscovery SSLOnly(this ProxyDiscovery discovery, bool strictHttps = true)
     {
-      discovery.Filters.Add(new HttpsFilter { AllowUnknown = false });
+      discovery.Filters.Add(new SSLFilter { AllowUnknown = false });
       return discovery;
     }
 
@@ -76,15 +75,15 @@ namespace BrokenEvent.ProxyDiscovery
     /// Adds protocol-based filtering. Only proxies with given protocol value will be included to the search results.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
-    /// <param name="testUrl">Protocol name (http, socks4, socks5, etc.)</param>
+    /// <param name="protocol">Protocol name in lowercase (http, socks4, socks5, etc.)</param>
     /// <returns>Proxy discovery.</returns>
     /// <seealso cref="ProtocolFilter"/>
-    public static ProxyDiscovery WithProtocol(this ProxyDiscovery discovery, string testUrl)
+    public static ProxyDiscovery WithProtocol(this ProxyDiscovery discovery, string protocol)
     {
-      if (string.IsNullOrWhiteSpace(testUrl))
-        throw new ArgumentNullException(nameof(testUrl));
+      if (string.IsNullOrWhiteSpace(protocol))
+        throw new ArgumentNullException(nameof(protocol));
 
-      discovery.Filters.Add(new ProtocolFilter { Protocol = testUrl });
+      discovery.Filters.Add(new ProtocolFilter { Protocol = protocol });
       return discovery;
     }
 
@@ -113,45 +112,44 @@ namespace BrokenEvent.ProxyDiscovery
     }
 
     /// <summary>
-    /// Adds proxy check via HTTP CONNECT. Each proxy will be tested for creating tunnels via HTTP CONNECT method. The tunnel will not be tested.
+    /// Adds proxy connection check. Each proxy found will be tested by connecting to the target host through it. The tunnel created will not be tested.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
-    /// <param name="testUrl">Target URL to check with.</param>
+    /// <param name="testUrl">Target URL to check with. Only http and https URL schemes are supported by the current implementation.
+    /// Only scheme, domain and port parts will be used.</param>
     /// <returns>Proxy discovery.</returns>
-    /// <seealso cref="ProxyHttpConnectChecker"/>
+    /// <seealso cref="ProxyChecker"/>
     /// <seealso cref="NoneTunnelTester"/>
-    public static ProxyDiscovery CheckHttpProxy(this ProxyDiscovery discovery, string testUrl)
+    /// <remarks>Current implementation supports HTTP (only with CONNECT HTTP method), SOCKS4/4A and SOCKS5 proxy protocols.</remarks>
+    public static ProxyDiscovery WithConnectionCheck(this ProxyDiscovery discovery, string testUrl)
     {
       if (string.IsNullOrWhiteSpace(testUrl))
         throw new ArgumentNullException(nameof(testUrl));
 
-      discovery.Checker = new ProxyHttpConnectChecker
-      {
-        TargetUrl = new Uri(testUrl),
-        TunnelTester = new NoneTunnelTester()
-      };
+      discovery.Checker = CreateDefaultProxyChecker(testUrl, new NoneTunnelTester());
       return discovery;
     }
 
     /// <summary>
-    /// Adds proxy check via HTTP CONNECT. Each proxy will be tester for creating tunnels via HTTP CONNECT method.
-    /// The tunnel created will be tested via HTTP HEAD method for the resource specified in <see cref="testUrl"/>.
+    /// Adds detailed proxy connection check. Each proxy found will be tested by connecting to the target host through it.
+    /// The created tunnel will be tested by sending HTTP HEAD request to the target server and processing the response to
+    /// determine if the proxy really can perform the connection.
     /// </summary>
     /// <param name="discovery">Proxy discovery.</param>
-    /// <param name="testUrl">Target URL to check with.</param>
+    /// <param name="testUrl">Target URL to check with. Only http and https URL schemes are supported by the current implementation.</param>
     /// <returns>Proxy discovery.</returns>
-    /// <seealso cref="ProxyHttpConnectChecker"/>
+    /// <seealso cref="ProxyChecker"/>
     /// <seealso cref="HttpHeadTunnelTester"/>
-    public static ProxyDiscovery CheckHttpProxyHead(this ProxyDiscovery discovery, string testUrl)
+    /// <remarks>
+    /// <para>Current implementation supports HTTP (only with CONNECT HTTP method), SOCKS4/4A and SOCKS5 proxy protocols.</para>
+    /// <para>Current implementation supports target server to be only HTTP(S) server.</para>
+    /// </remarks>
+    public static ProxyDiscovery WithTunnelHeadCheck(this ProxyDiscovery discovery, string testUrl)
     {
       if (string.IsNullOrWhiteSpace(testUrl))
         throw new ArgumentNullException(nameof(testUrl));
 
-      discovery.Checker = new ProxyHttpConnectChecker
-      {
-        TargetUrl = new Uri(testUrl),
-        TunnelTester = new HttpHeadTunnelTester()
-      };
+      discovery.Checker = CreateDefaultProxyChecker(testUrl, new HttpHeadTunnelTester());
       return discovery;
     }
 
@@ -205,6 +203,31 @@ namespace BrokenEvent.ProxyDiscovery
             )
         );
       return discovery;
+    }
+
+    /// <summary>
+    /// Creates the default proxy checker with default supported proxy protocols: http, socks4, socks5.
+    /// </summary>
+    /// <param name="testUrl"></param>
+    /// <param name="tunnelTester"></param>
+    /// <returns></returns>
+    public static ProxyChecker CreateDefaultProxyChecker(string testUrl, IProxyTunnelTester tunnelTester)
+    {
+      if (string.IsNullOrWhiteSpace(testUrl))
+        throw new ArgumentNullException(nameof(testUrl));
+      if (tunnelTester == null)
+        throw new ArgumentNullException(nameof(tunnelTester));
+
+      ProxyChecker checker = new ProxyChecker
+      {
+        TargetUrl = new Uri(testUrl),
+      };
+
+      checker.AddProtocolChecker("http", new HttpConnectChecker());
+      checker.AddProtocolChecker("socks4", new Socks4Checker());
+      checker.AddProtocolChecker("socks5", new Socks5Checker());
+
+      return checker;
     }
   }
 }

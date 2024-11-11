@@ -26,12 +26,12 @@ namespace BrokenEvent.ProxyDiscovery.Tester
             IpColumn = 0,
             PortColumn = 1,
             CountryColumn = 2,
-            IsHttpsColumn = 3,
+            IsSSLColumn = 3,
             DefaultProtocol = "http"
           }
         )
-        .HttpsOnly()
-        .CheckHttpProxyHead("https://brokenevent.com");
+        .SSLOnly()
+        .WithTunnelHeadCheck("https://brokenevent.com");
       
       discovery.LogMessage += Console.WriteLine;
       discovery.ProxyCheckComplete += Discovery_ProxyCheckComplete;

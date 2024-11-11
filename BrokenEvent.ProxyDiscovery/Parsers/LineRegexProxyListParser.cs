@@ -14,14 +14,14 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// <summary>
     /// Creates an instance of line-based regex proxy list parser.
     /// </summary>
-    /// <param name="lineRegex">Regex to parse single line. For details see remarks of <see cref="LineRegex"/>.</param>
-    public LineRegexProxyListParser(string lineRegex)
+    /// <param name="expression">Regex to parse a single line. For details see remarks of <see cref="Expression"/>.</param>
+    public LineRegexProxyListParser(string expression)
     {
-      LineRegex = lineRegex;
+      Expression = expression;
     }
 
     /// <summary>
-    /// Gets or sets the regex to parse single line.
+    /// Gets or sets the regular expression to parse a single line.
     /// </summary>
     /// <remarks>
     /// Parser uses named regular expression groups (<c>(?&lt;name&gt;.\)</c>) to get the data. Group names are:
@@ -38,33 +38,41 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
     /// For boolean groups like "https" and "google" missing group is treated as "unknown". For value "1", "yes", "true" and "+"
     /// (case-insensitive) are treated as <c>true</c>, other values are treated as <c>false</c>.
     /// </remarks>
-    public string LineRegex { get; set; }
-
-    private string ValidateRegex()
-    {
-      try
-      {
-        // ReSharper disable once ObjectCreationAsStatement
-        new Regex(LineRegex);
-        return null;
-      }
-      catch (Exception e)
-      {
-        return e.Message;
-      }
-    }
+    public string Expression { get; set; }
 
     /// <inheritdoc />
     public override IEnumerable<string> Validate()
     {
-      if (string.IsNullOrWhiteSpace(LineRegex))
-        yield return "Line regex cannot be empty";
-      else
+      if (string.IsNullOrWhiteSpace(Expression))
       {
-        string error = ValidateRegex();
-        if (error != null)
-          yield return error;
+        yield return "Line regex cannot be empty";
+        yield break;
       }
+
+      Regex regex = null;
+      string exceptionMessage = null;
+      try
+      {
+        regex = new Regex(Expression);
+      }
+      catch (Exception e)
+      {
+        exceptionMessage = e.Message;
+      }
+
+      // could not parse
+      if (exceptionMessage != null)
+      {
+        yield return exceptionMessage;
+        yield break;
+      }
+
+      if (string.IsNullOrWhiteSpace(DefaultProtocol) && regex.GroupNumberFromName("protocol") == -1)
+        yield return "Neither the default protocol, nor <protocol> regex group not specified.";
+      if (regex.GroupNumberFromName("address") == -1)
+        yield return "Regex group <address> not specified";
+      if (regex.GroupNumberFromName("port") == -1)
+        yield return "Regex group <port> not specified";
     }
 
     private Match CreateMatch(string line, Action<string> onError)
@@ -74,7 +82,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
 
       try
       {
-        Match match = Regex.Match(line, LineRegex);
+        Match match = Regex.Match(line, Expression);
 
         if (!match.Success)
           return null;
@@ -117,13 +125,12 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
         yield return new ProxyInformation(
             groupAddress.Value,
             ushort.Parse(groupPort.Value),
-            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : DefaultHttps,
-            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : DefaultGoogle,
             groupProtocol.Success ? groupProtocol.Value.ToLower() : DefaultProtocol,
+            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : DefaultSSL,
+            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : DefaultGoogle,
             groupName.Success ? groupName.Value : null,
             groupCountry.Success ? groupCountry.Value : null,
-            groupCity.Success ? groupCity.Value : null
-          );
+            groupCity.Success ? groupCity.Value : null);
       }
     }
 

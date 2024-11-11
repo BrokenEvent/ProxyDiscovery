@@ -108,6 +108,8 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
 
     public static void AppendItem(this StringBuilder sb, string name, string value)
     {
+      if (string.IsNullOrWhiteSpace(value))
+        return;
       if (sb.Length > 0)
         sb.Append(", ");
       sb.Append(name).Append(": ").Append(value);

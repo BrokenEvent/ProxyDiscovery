@@ -41,7 +41,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(countryValues))]
     public void ResolveCountryProxyInformation(U u)
     {
-      ProxyInformation info = new ProxyInformation("192.168.0.1", 3128, country: u.Input);
+      ProxyInformation info = new ProxyInformation("192.168.0.1", 3128, "http", country: u.Input);
       Assert.AreEqual(u.Expected, info.Country);
     }
   }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -51,6 +52,9 @@ namespace BrokenEvent.ProxyDiscovery.Tests
     [TestCaseSource(nameof(simpleTestsData))]
     public void SimpleTest(U u)
     {
+      // no validation errors
+      Assert.False(u.Parser.Validate().GetEnumerator().MoveNext());
+
       LogCollector lc = new LogCollector();
       List<ProxyInformation> list = new List<ProxyInformation>(u.Parser.ParseContent(LoadResource(u.Resource), lc.AddLog));
 
@@ -65,6 +69,47 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       Assert.AreEqual("192.168.0.5", list[2].Address.ToString());
       Assert.AreEqual(3128, list[2].Port);
       Assert.AreEqual("http", list[2].Protocol);
+    }
+
+    public class V
+    {
+      public int Count { get; }
+
+      public LineRegexProxyListParser Parser { get; }
+
+      public V(int count, string regex)
+      {
+        Count = count;
+        Parser = new LineRegexProxyListParser(regex);
+      }
+
+      public V(int count, LineRegexProxyListParser parser)
+      {
+        Count = count;
+        Parser = parser;
+      }
+
+      public override string ToString()
+      {
+        return Parser.Expression;
+      }
+    }
+
+    public static readonly V[] validationData = new V[]
+    {
+      new V(0, @"(?<address>.+) - (?<port>[\d]+) - (?<protocol>.+)"),
+      new V(1, new LineRegexProxyListParser(null)),
+      new V(1, " "),
+      new V(1, @"(?<address>.+) - (?<port>[\d]+)"),
+      new V(2, @"(?<address>.+)"),
+      new V(1, new LineRegexProxyListParser(@"(?<address>.+)") { DefaultProtocol = "http" }),
+      new V(1, new LineRegexProxyListParser(@"(((((") { DefaultProtocol = "http" }),
+    };
+
+    [TestCaseSource(nameof(validationData))]
+    public void ValidationTest(V v)
+    {
+      Assert.AreEqual(v.Count, v.Parser.Validate().ToList().Count);
     }
   }
 }
