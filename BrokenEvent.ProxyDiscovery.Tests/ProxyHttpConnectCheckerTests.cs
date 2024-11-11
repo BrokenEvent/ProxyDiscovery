@@ -19,21 +19,23 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       public IProxyTunnelTester TunnelTester { get; }
       public HttpVersion Version { get; }
       public ProxyCheckResult ExpectedResult { get; }
+      public string Name { get; }
       public string Target { get; }
 
-      public U(int port, TestServer server, IProxyTunnelTester tunnelTester, HttpVersion version, ProxyCheckResult expectedResult, string target = "http://test.com")
+      public U(int port, TestServer server, IProxyTunnelTester tunnelTester, HttpVersion version, ProxyCheckResult expectedResult, string name, string target = "http://test.com")
       {
         Port = port;
         Server = server;
         TunnelTester = tunnelTester;
         Version = version;
         ExpectedResult = expectedResult;
+        Name = name;
         Target = target;
       }
 
       public override string ToString()
       {
-        return $"{Port} {Version} {TunnelTester.GetType().Name} Server: '{Server}' Expected: {ExpectedResult}";
+        return $"{Name}. Expected: {ExpectedResult}";
       }
     }
 
@@ -48,7 +50,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.0\r\n\r\n", "HTTP/1.0 200 OK\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneZero,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.0 - None - 200"
         ),
       new U(
           portCounter++,
@@ -56,7 +59,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.0\r\n\r\n", "HTTP/1.0 403 Forbidden\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneZero,
-          ProxyCheckResult.ServiceRefused
+          ProxyCheckResult.ServiceRefused,
+          "HTTP/1.0 - None - 403"
         ),
       new U(
           portCounter++,
@@ -64,7 +68,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.0\r\n\r\n", "HTTP/1.0 502 Bad Gateway\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneZero,
-          ProxyCheckResult.ServiceRefused
+          ProxyCheckResult.ServiceRefused,
+          "HTTP/1.0 - None - 502"
         ),
 
       // HTTP1.1 via none
@@ -74,7 +79,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.1 - None - 200"
         ),
       new U(
           portCounter++,
@@ -82,7 +88,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.0\r\n\r\n", "HTTP/1.1 502 Bad Gateway\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneZero,
-          ProxyCheckResult.ServiceRefused
+          ProxyCheckResult.ServiceRefused,
+          "HTTP/1.1 - None - 502"
         ),
       new U(
           portCounter++,
@@ -90,7 +97,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.0\r\n\r\n", "HTTP/1.1 403 Forbidden\r\n\r\n"),
           new NoneTunnelTester(),
           HttpVersion.OneZero,
-          ProxyCheckResult.ServiceRefused
+          ProxyCheckResult.ServiceRefused,
+          "HTTP/1.1 - None - 403"
         ),
       new U(
           portCounter++,
@@ -98,14 +106,16 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "oouoiuouoiui"),
           new NoneTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.UnparsableResponse
+          ProxyCheckResult.UnparsableResponse,
+          "HTTP/1.1 - None - Unparsable"
         ),
       new U(
           portCounter++,
           null,
           new NoneTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.NetworkError
+          ProxyCheckResult.NetworkError,
+          "HTTP/1.1 - None - No server"
         ),
 
       // HTTP1.1 via head
@@ -116,7 +126,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("HEAD / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.1 - Head - 200"
         ),
       new U(
           portCounter++,
@@ -125,7 +136,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("HEAD / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.1 404 Not Found\r\n\r\n"),
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.1 - Head - 200 - 404"
         ),
       new U(
           portCounter++,
@@ -134,7 +146,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("HEAD / HTTP/1.1\r\nHost:test.com\r\n\r\n", "uihuiuhiuhiuh"),
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.UnparsableResponse
+          ProxyCheckResult.UnparsableResponse,
+          "HTTP/1.1 - Head - 200 - Unparsable"
         ),
       new U(
           portCounter++,
@@ -142,7 +155,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.NetworkError
+          ProxyCheckResult.NetworkError,
+          "HTTP/1.1 - Head - 200 - None"
         ),
 
       // HTTP1.1 via trace
@@ -153,7 +167,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("TRACE / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.0 200 OK\r\n\r\n"),
           new HttpTraceTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.1 - Trace - 200 - 200"
         ),
       new U(
           portCounter++,
@@ -162,7 +177,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("TRACE / HTTP/1.1\r\nHost:test.com\r\n\r\n", "HTTP/1.1 405 Method Not Allowed\r\n\r\n"),
           new HttpTraceTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.OK
+          ProxyCheckResult.OK,
+          "HTTP/1.1 - Trace - 200 - 405"
         ),
       new U(
           portCounter++,
@@ -171,7 +187,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("TRACE / HTTP/1.1\r\nHost:test.com\r\n\r\n", "uihuiuhiuhiuh"),
           new HttpTraceTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.UnparsableResponse
+          ProxyCheckResult.UnparsableResponse,
+          "HTTP/1.1 - Trace - 200 - Unparsable"
         ),
       new U(
           portCounter++,
@@ -179,7 +196,8 @@ namespace BrokenEvent.ProxyDiscovery.Tests
             .AddExchange("CONNECT test.com:80 HTTP/1.1\r\nHost:test.com:80\r\n\r\n", "HTTP/1.1 200 OK\r\n\r\n"),
           new HttpTraceTunnelTester(),
           HttpVersion.OneOne,
-          ProxyCheckResult.NetworkError
+          ProxyCheckResult.NetworkError,
+          "HTTP/1.1 - Trace - 200 - None"
         ),
 
       // HTTP1.1 via head via SSL
@@ -191,6 +209,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
           ProxyCheckResult.NetworkError,
+          "HTTP/1.1/SSL - Head - 200 - None",
           "https://test.com"
         ),
       new U(
@@ -200,6 +219,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
           ProxyCheckResult.OK,
+          "HTTP/1.1/SSL - Head - 200 - brokenevent.com",
           "https://brokenevent.com"
         ),
       new U(
@@ -209,6 +229,7 @@ namespace BrokenEvent.ProxyDiscovery.Tests
           new HttpHeadTunnelTester(),
           HttpVersion.OneOne,
           ProxyCheckResult.SSLError,
+          "HTTP/1.1/SSL - Head - 200 - SSL error",
           "https://microsoft.com"
         ),
     };
