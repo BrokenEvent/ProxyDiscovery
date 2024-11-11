@@ -46,7 +46,6 @@
     <Compile Include="GoogleFilterTests.cs" />
     <Compile Include="HelpersTests.cs" />
     <Compile Include="CountryFilterTests.cs" />
-    <Compile Include="HtmlProxyListParserTests.cs" />
     <Compile Include="LineRegexProxyListParserTests.cs" />
     <Compile Include="LogCollector.cs" />
     <Compile Include="ProxyHttpConnectCheckerTests.cs" />
@@ -84,9 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\format1.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Data\msword.htm" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

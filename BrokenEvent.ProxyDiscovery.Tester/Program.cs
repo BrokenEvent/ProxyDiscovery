@@ -2,8 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-using BrokenEvent.ProxyDiscovery.Checkers;
-using BrokenEvent.ProxyDiscovery.Filters;
+using BrokenEvent.ProxyDiscovery.Parsers;
 
 namespace BrokenEvent.ProxyDiscovery.Tester
 {
@@ -12,26 +11,28 @@ namespace BrokenEvent.ProxyDiscovery.Tester
     static void Main(string[] args)
     {
       ProxyDiscovery discovery = Test().GetAwaiter().GetResult();
+
+      Console.WriteLine("Proxy check complete. Found: {0} items", discovery.Proxies.Count);
       Console.ReadLine();
     }
 
     private static async Task<ProxyDiscovery> Test()
     {
-      ProxyDiscovery discovery = new ProxyDiscovery
-      {
-        Providers =
-        {
-          WellKnown.FreeProxyProvider,
-          WellKnown.PubProxyProvider
-        },
-        Filters = { new HttpsFilter() },
-        Checker = new ProxyHttpConnectChecker
-        {
-          TargetUrl = new Uri("https://brokenevent.com"),
-          Timeout = 1000,
-          TunnelTester = new NoneTunnelTester()
-        },
-      };
+      ProxyDiscovery discovery = new ProxyDiscovery()
+        .AddFileProxyListProvider(
+          "proxies.csv",
+          new CsvProxyListParser
+          {
+            IpColumn = 0,
+            PortColumn = 1,
+            CountryColumn = 2,
+            IsHttpsColumn = 3,
+            DefaultProtocol = "http"
+          }
+        )
+        .HttpsOnly()
+        .CheckHttpProxyHead("https://brokenevent.com");
+      
       discovery.LogMessage += Console.WriteLine;
       discovery.ProxyCheckComplete += Discovery_ProxyCheckComplete;
       discovery.FilteringComplete += Discovery_FilteringComplete;

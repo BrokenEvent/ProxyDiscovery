@@ -52,7 +52,6 @@
     <Compile Include="Parsers\AbstractProxyListParser.cs" />
     <Compile Include="Parsers\CsvParser.cs" />
     <Compile Include="Parsers\CsvProxyListParser.cs" />
-    <Compile Include="Parsers\HtmlProxyListParser.cs" />
     <Compile Include="Parsers\LineRegexProxyListParser.cs" />
     <Compile Include="Providers\CompositeProxyProvider.cs" />
     <Compile Include="Providers\StaticProxyProvider.cs" />
@@ -63,7 +62,6 @@
     <Compile Include="ServiceDetector.cs" />
     <Compile Include="Sources\FileProxyListSource.cs" />
     <Compile Include="Sources\WebProxyListSource.cs" />
-    <Compile Include="WellKnown.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -72,10 +70,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="countries.csv" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.33" />
   </ItemGroup>
 
 </Project>
