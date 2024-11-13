@@ -35,7 +35,13 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     public string FilePath { get; set; }
 
     /// <inheritdoc />
-    public Task<string> GetContentAsync(CancellationToken ct, Action<string> onError)
+    public bool HasPages
+    {
+      get { return false; }
+    }
+
+    /// <inheritdoc />
+    public Task<string> GetContentAsync(CancellationToken ct, int pageNumber, Action<string> onError)
     {
       if (!File.Exists(FilePath))
       {

@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-using BrokenEvent.ProxyDiscovery.Helpers;
-
 namespace BrokenEvent.ProxyDiscovery.Parsers
 {
   /// <summary>
@@ -109,7 +107,7 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
 
         Group groupAddress = match.Groups["address"];
         Group groupPort = match.Groups["port"];
-        Group groupHttps = match.Groups["https"];
+        Group groupSsl = match.Groups["ssl"];
         Group groupGoogle = match.Groups["google"];
         Group groupProtocol = match.Groups["protocol"];
         Group groupName = match.Groups["name"];
@@ -126,8 +124,8 @@ namespace BrokenEvent.ProxyDiscovery.Parsers
             groupAddress.Value,
             ushort.Parse(groupPort.Value),
             groupProtocol.Success ? groupProtocol.Value.ToLower() : DefaultProtocol,
-            groupHttps.Success ? StringHelpers.ParseBool(groupHttps.Value) : DefaultSSL,
-            groupGoogle.Success ? StringHelpers.ParseBool(groupGoogle.Value) : DefaultGoogle,
+            groupSsl.Success ? !string.IsNullOrWhiteSpace(groupSsl.Value) : DefaultSSL,
+            groupGoogle.Success ? !string.IsNullOrWhiteSpace(groupGoogle.Value) : DefaultGoogle,
             groupName.Success ? groupName.Value : null,
             groupCountry.Success ? groupCountry.Value : null,
             groupCity.Success ? groupCity.Value : null);

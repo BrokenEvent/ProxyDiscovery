@@ -53,7 +53,40 @@ namespace BrokenEvent.ProxyDiscovery.Providers
     /// <inheritdoc />
     public async Task<IEnumerable<ProxyInformation>> GetProxiesAsync(CancellationToken ct, Action<string> onError)
     {
-      string content = await Source.GetContentAsync(ct, onError);
+      if (Source.HasPages)
+      {
+        List<ProxyInformation> results = new List<ProxyInformation>();
+        for (int pageNumber = 1;; pageNumber++)
+        {
+          // get nth page content
+          string pageContent;
+          try
+          {
+            pageContent = await Source.GetContentAsync(ct, pageNumber, onError);
+          }
+          catch
+          {
+            // ignore the exception
+            break;
+          }
+
+          // no content, so stop iteration
+          if (string.IsNullOrWhiteSpace(pageContent))
+            break;
+
+          int resultsCount = results.Count;
+          results.AddRange(Parser.ParseContent(pageContent, onError));
+
+          // no proxies added, so stop iteration
+          if (resultsCount == results.Count)
+            break;
+        }
+
+        return results;
+      }
+
+      // get the content
+      string content = await Source.GetContentAsync(ct, 0, onError);
 
       // do we have content?
       if (!string.IsNullOrWhiteSpace(content))

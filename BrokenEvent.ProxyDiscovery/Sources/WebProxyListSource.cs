@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 
+using BrokenEvent.ProxyDiscovery.Helpers;
 using BrokenEvent.ProxyDiscovery.Interfaces;
 
 namespace BrokenEvent.ProxyDiscovery.Sources
@@ -15,11 +14,6 @@ namespace BrokenEvent.ProxyDiscovery.Sources
   /// </summary>
   public sealed class WebProxyListSource: IProxyListSource
   {
-    /// <summary>
-    /// Gets the optional URL arguments to be added to the original URL.
-    /// </summary>
-    public List<WebProxyListSourceArg> Args { get; } = new List<WebProxyListSourceArg>();
-
     /// <summary>
     /// Creates an instance of the Web proxy list source.
     /// </summary>
@@ -34,42 +28,52 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     {
       if (string.IsNullOrWhiteSpace(Url))
         yield return "Source URL is missing";
-
-      foreach (WebProxyListSourceArg arg in Args)
-      {
-        if (string.IsNullOrWhiteSpace(arg.Name))
-          yield return "URL argument name cannot be empty";
-        if (string.IsNullOrWhiteSpace(arg.Value))
-          yield return "URL argument value cannot be empty";
-      }
     }
 
     /// <summary>
-    /// Gets or sets the URL to download proxy list from.
+    /// Gets or sets the URL to download proxy list from. For syntax see remarks.
     /// </summary>
+    /// <remarks>
+    /// <para>If the source contains several pages, the substitution syntax should be used. It contains optional part in square brackets ([, ])
+    /// with <c>$</c> as the page number. The page number starts from 1. See examples.</para>
+    /// <para>The presence of the page number for the first page
+    /// depends on <see cref="SkipNumberForFirstPage"/>.</para>
+    /// <para>Whether the source is multipaged depends on presence of substitution marker.</para>
+    /// </remarks>
+    /// <example>
+    /// <para><c>https://brokenevent.com</c> - no subsitutions.</para>
+    /// <para><c>https://brokenevent.com[/$]</c> - will result <c>https://brokenevent.com</c> with no page number and <c>https://brokenevent.com/1</c> for
+    /// page number 1.</para>
+    /// <para><c>https://brokenevent.com?id=test[&amp;page=$]</c> - will result <c>https://brokenevent.com?id=test</c> with no page number and
+    ///  <c>https://brokenevent.com?id=test&amp;page=10</c> for page number 10.</para>
+    /// </example>
     public string Url { get; set; }
 
-    private Uri GetActualUri()
+    /// <summary>
+    /// Gets the value indicating whether to skip page number for the first page.
+    /// </summary>
+    /// <seealso cref="Url"/>
+    public bool SkipNumberForFirstPage { get; set; } = true;
+
+    /// <inheritdoc />
+    public bool HasPages
     {
-      Uri uri = new Uri(Url);
-      if (Args.Count == 0)
-        return uri;
+      get { return StringHelpers.CheckUrlForPageNumber(Url); }
+    }
 
-      // https://stackoverflow.com/a/19679135/4588884
-      UriBuilder uriBuilder = new UriBuilder(uri);
-      NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
-      foreach (WebProxyListSourceArg arg in Args)
-        query[arg.Name] = arg.Value;
-
-      uriBuilder.Query = query.ToString();
-
-      return uriBuilder.Uri;
+    private Uri GetActualUri(int pageNumber)
+    {
+      return new Uri(
+          StringHelpers.ProcessUrl(
+            Url,
+            pageNumber == 0 || (pageNumber == 1 && SkipNumberForFirstPage) ? (int?)null : pageNumber)
+        );
     }
 
     /// <inheritdoc />
-    public Task<string> GetContentAsync(CancellationToken ct, Action<string> onError)
+    public Task<string> GetContentAsync(CancellationToken ct, int pageNumber, Action<string> onError)
     {
-      Uri uri = GetActualUri();
+      Uri uri = GetActualUri(pageNumber);
 
       using (WebClient client = new WebClient())
       {
@@ -84,11 +88,5 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     {
       return $"Web: {Url}";
     }
-  }
-
-  public class WebProxyListSourceArg
-  {
-    public string Name { get; set; }
-    public string Value { get; set; }
   }
 }

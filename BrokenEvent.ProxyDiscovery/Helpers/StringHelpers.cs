@@ -88,17 +88,6 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
       return result;
     }
 
-    public static bool CompareSubstring(string s, int i, string target)
-    {
-      for (int j = 0; j < target.Length; j++)
-      {
-        if (s[i + j] != target[i])
-          return false;
-      }
-
-      return true;
-    }
-
     public static void AppendItem(this StringBuilder sb, string value)
     {
       if (sb.Length > 0)
@@ -128,6 +117,53 @@ namespace BrokenEvent.ProxyDiscovery.Helpers
       address = null;
       port = 0;
       return false;
+    }
+
+    public static string ProcessUrl(string url, int? pageNumber)
+    {
+      if (url == null)
+        throw new ArgumentNullException(nameof(url));
+
+      int startIndex = url.IndexOf('[');
+
+      // no substitutions found
+      if (startIndex == -1)
+        return url;
+
+      int endIndex = url.IndexOf(']', startIndex);
+
+      // not terminated
+      if (endIndex == -1)
+        throw new FormatException("Unterminated substitution in URL. Expected to encounter ']'");
+
+      StringBuilder sb = new StringBuilder();
+
+      // part before substitution
+      sb.Append(url, 0, startIndex);
+
+      // substituted part
+      if (pageNumber.HasValue)
+        for (int i = startIndex + 1; i < endIndex; i++)
+        {
+          char c = url[i];
+          if (c == '$')
+            sb.Append(pageNumber.Value);
+          else
+            sb.Append(c);
+        }
+
+      // the endth part
+      if (endIndex < url.Length - 1)
+        sb.Append(url, endIndex + 1, url.Length - endIndex - 1);
+
+      return sb.ToString();
+    }
+
+    public static bool CheckUrlForPageNumber(string url)
+    {
+      if (url == null)
+        throw new ArgumentNullException(nameof(url));
+      return url.IndexOf('[') != -1;
     }
   }
 }

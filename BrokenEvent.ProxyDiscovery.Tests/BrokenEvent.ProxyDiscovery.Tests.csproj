@@ -57,6 +57,7 @@
     <Compile Include="ProtocolFilterTests.cs" />
     <Compile Include="ProxyDiscoveryTests.cs" />
     <Compile Include="ServiceDetectorTests.cs" />
+    <Compile Include="StringHelperTests.cs" />
     <Compile Include="TestServer.cs" />
     <Compile Include="TestServerRelay.cs" />
   </ItemGroup>
