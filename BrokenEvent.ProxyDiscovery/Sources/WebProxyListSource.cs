@@ -28,6 +28,9 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     {
       if (string.IsNullOrWhiteSpace(Url))
         yield return "Source URL is missing";
+
+      if (IsUploadMethod() && string.IsNullOrWhiteSpace(FormData))
+        yield return $"Using upload HTTP method ({HttpMethod}), but FormData is empty";
     }
 
     /// <summary>
@@ -55,18 +58,45 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     /// <seealso cref="Url"/>
     public bool SkipNumberForFirstPage { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the HTTP method to use.
+    /// </summary>
+    /// <remarks>
+    /// <para>POST and similar methods require <see cref="FormData"/> value to be set.</para>
+    /// <para>The current implementation supports only x-www-form-urlencoded.</para>
+    /// </remarks>
+    public string HttpMethod { get; set; } = "GET";
+
+    /// <summary>
+    /// Gets or sets the content of HTML form. Used only if <see cref="HttpMethod"/> is set to upload method (like POST).
+    /// </summary>
+    public string FormData { get; set; }
+
     /// <inheritdoc />
     public bool HasPages
     {
       get { return StringHelpers.CheckUrlForPageNumber(Url); }
     }
 
-    private Uri GetActualUri(int pageNumber)
+    private bool IsUploadMethod()
+    {
+      return HttpMethod == "POST" || HttpMethod == "PUT" || HttpMethod == "PATCH";
+    }
+
+    public Uri GetActualUri(int pageNumber)
     {
       return new Uri(
           StringHelpers.ProcessUrl(
             Url,
             pageNumber == 0 || (pageNumber == 1 && SkipNumberForFirstPage) ? (int?)null : pageNumber)
+        );
+    }
+
+    private string GetUploadContent(int pageNumber)
+    {
+      return StringHelpers.ProcessUrl(
+          FormData,
+          pageNumber == 0 || (pageNumber == 1 && SkipNumberForFirstPage) ? (int?)null : pageNumber
         );
     }
 
@@ -80,7 +110,14 @@ namespace BrokenEvent.ProxyDiscovery.Sources
         client.Proxy = new WebProxy();
 
         using (ct.Register(client.CancelAsync))
-          return client.DownloadStringTaskAsync(uri);
+        {
+          if (!IsUploadMethod())
+            return client.DownloadStringTaskAsync(uri);
+
+          // upload form-data
+          client.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+          return client.UploadStringTaskAsync(uri, HttpMethod, GetUploadContent(pageNumber));
+        }
       }
     }
 
