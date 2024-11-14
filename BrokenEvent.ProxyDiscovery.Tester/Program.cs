@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
+using BrokenEvent.ProxyDiscovery.Interfaces;
 using BrokenEvent.ProxyDiscovery.Parsers;
 
 namespace BrokenEvent.ProxyDiscovery.Tester
@@ -48,9 +49,9 @@ namespace BrokenEvent.ProxyDiscovery.Tester
       Console.WriteLine($"Discovery status changed: {status}");
     }
 
-    private static void Discovery_AcquisitionComplete(int proxies)
+    private static void Discovery_AcquisitionComplete(IProxyListProvider proxyListProvider, int i)
     {
-      Console.WriteLine($"Discovery proxy lists acquired: {proxies} proxies");
+      Console.WriteLine($"Discovery proxy list acquired: {i} proxies from {proxyListProvider}");
     }
 
     private static void Discovery_FilteringComplete(int proxies)

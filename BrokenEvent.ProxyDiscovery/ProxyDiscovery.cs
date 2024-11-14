@@ -117,7 +117,7 @@ namespace BrokenEvent.ProxyDiscovery
         proxies = null;
 
         // update status
-        Status = ProxyDiscoveryStatus.Acuisition;
+        Status = ProxyDiscoveryStatus.Acquisition;
 
         // get the proxies lists in unified list
         foreach (IProxyListProvider provider in Providers)
@@ -125,15 +125,21 @@ namespace BrokenEvent.ProxyDiscovery
           if (LogMessage != null)
             LogMessage($"Acquiring proxies list: {provider}");
 
+          int newProxiesCount = 0;
+
           try
           {
-            updater.UpdateProxyList(await provider.GetProxiesAsync(ct, OnProxyProviderError).ConfigureAwait(false));
+            newProxiesCount = updater.UpdateProxyList(await provider.GetProxiesAsync(ct, OnProxyProviderError).ConfigureAwait(false));
           }
           catch (Exception e)
           {
             if (LogMessage != null)
               LogMessage($"Failed to get proxy list from: {provider}. Message: {e.Message}");
           }
+
+          // status notify
+          if (AcquisitionComplete != null)
+            AcquisitionComplete(provider, newProxiesCount);
 
           // respect the cancellation token
           if (ct.IsCancellationRequested)
@@ -142,10 +148,6 @@ namespace BrokenEvent.ProxyDiscovery
 
         if (LogMessage != null)
           LogMessage($"Proxies acquired: {updater.Count}");
-
-        // status notify
-        if (AcquisitionComplete != null)
-          AcquisitionComplete(updater.Count);
 
         // filter list (if any filters)
         if (updater.HasFilters)
@@ -238,20 +240,26 @@ namespace BrokenEvent.ProxyDiscovery
     public event Action<string> ProxyProviderError;
 
     /// <summary>
-    /// Event is called when the availability check is completed for a proxy during <see cref="Update"/>.
+    /// Event is called when the availability check is completed for a certain proxy during <see cref="Update"/>.
     /// The parameter is the proxy just checked. The client should check <see cref="ProxyState.Result"/> carefully
-    /// as this event is called for all the proxies, including the ones which has failed the check.
+    /// as this event is called for all the proxies, including the ones which have failed the check.
     /// </summary>
     /// <remarks>
     /// <para>Event is never called when <see cref="IProxyChecker"/> is <c>null</c>.</para>
     /// <para>Called from the background thread.</para>
+    /// <para>Hint: you may use this event to track check progress as you know the total count of proxies to check from <see cref="FilteringComplete"/> event params.</para>
     /// </remarks>
     public event Action<ProxyState> ProxyCheckComplete;
 
     /// <summary>
-    /// Event is called when all proxy lists are acquired. The parameter is total count of proxies obtained.
+    /// Event is called when a proxy list is acquired from a certain proxy list provider. The first argument is
+    /// a provider which finished the acquisition, the second is count of proxies obtained from given provider.
     /// </summary>
-    public event Action<int> AcquisitionComplete;
+    /// <remarks>
+    /// <para>If the proxy list provider throws an exception during the acquisition process, the event is still fired.</para>
+    /// <para>Hint: You may use this event to track progress of the acquisiton as you know the total count of proxy list providers.</para>
+    /// </remarks>
+    public event Action<IProxyListProvider, int> AcquisitionComplete;
 
     /// <summary>
     /// Event is called when proxy filtering is completed. The parameter is count of proxies remain after filtering.
@@ -294,11 +302,17 @@ namespace BrokenEvent.ProxyDiscovery
         this.globalCancellationToken = globalCancellationToken;
       }
 
-      public void UpdateProxyList(IEnumerable<ProxyInformation> proxies)
+      public int UpdateProxyList(IEnumerable<ProxyInformation> proxies)
       {
+        // save the count
+        int previousCount = proxySet.Count;
+
         if (proxies == null)
-          return; // fatal provider error
+          return 0; // fatal provider error
         proxySet.UnionWith(proxies);
+
+        // how many was added?
+        return proxySet.Count - previousCount;
       }
 
       public int Count
@@ -423,7 +437,7 @@ namespace BrokenEvent.ProxyDiscovery
     /// <summary>
     /// The proxy discovery is acquiring and processing the proxy lists.
     /// </summary>
-    Acuisition,
+    Acquisition,
     /// <summary>
     /// The proxy discovery is filtering the proxy list.
     /// </summary>
