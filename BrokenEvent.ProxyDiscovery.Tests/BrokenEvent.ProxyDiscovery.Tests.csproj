@@ -60,6 +60,7 @@
     <Compile Include="StringHelperTests.cs" />
     <Compile Include="TestServer.cs" />
     <Compile Include="TestServerRelay.cs" />
+    <Compile Include="WebProxyListSourceTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\comma_header_ip_port.csv" />

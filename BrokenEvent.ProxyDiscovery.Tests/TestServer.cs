@@ -23,6 +23,12 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       return this;
     }
 
+    public TestServer AddExchange(string request, string headers, string content)
+    {
+      exchanges.Add(new TestServerExchange(request, $"{headers}\r\nContent-Length:{content.Length}\r\n\r\n{content}"));
+      return this;
+    }
+
     public async Task Start(int port, int bufferSize = 1024)
     {
       listener = new TcpListener(IPAddress.Any, port);
@@ -50,23 +56,45 @@ namespace BrokenEvent.ProxyDiscovery.Tests
       client?.Dispose();
     }
 
-    protected virtual async Task HandleConnection(NetworkStream stream, int bufferSize)
+    private static async Task<byte[]> Receive(NetworkStream stream, string expected, int bufferSize)
     {
-      byte[] buffer = new byte[bufferSize];
+      int minimumExpected = expected == null ? 1 : expected.Length;
 
-      foreach (TestServerExchange exchange in exchanges)
+      byte[] buffer = new byte[bufferSize];
+      int totalReceived = 0;
+      while (totalReceived < minimumExpected)
       {
-        int received = await stream.ReadAsync(buffer, 0, bufferSize);
+        int received = await stream.ReadAsync(buffer, totalReceived, bufferSize - totalReceived);
 
         if (received == 0)
           Assert.Fail("Premature end of connection");
 
-        string request = Encoding.ASCII.GetString(buffer, 0, received);
+        totalReceived += received;
+      }
 
-        if (exchange.Request != null)
-          Assert.AreEqual(exchange.Request, request);
+      byte[] result = new byte[totalReceived];
+      Array.Copy(buffer, result, totalReceived);
 
-        byte[] response = Encoding.ASCII.GetBytes(exchange.Response);
+      return result;
+    }
+
+    protected virtual async Task HandleConnection(NetworkStream stream, int bufferSize)
+    {
+      foreach (TestServerExchange exchange in exchanges)
+      {
+        byte[] buffer = await Receive(stream, exchange.Request, bufferSize);
+
+        string request = Encoding.ASCII.GetString(buffer, 0, buffer.Length);
+
+        string responseString = exchange.Response;
+
+        if (exchange.Request != null && exchange.Request != request)
+          responseString = "HTTP/1.0 400 Bad Request\r\n\r\n";
+
+        if (responseString == null)
+          continue;
+
+        byte[] response = Encoding.ASCII.GetBytes(responseString);
 
         await stream.WriteAsync(response, 0, response.Length);
       }

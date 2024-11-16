@@ -75,7 +75,7 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     /// <inheritdoc />
     public bool HasPages
     {
-      get { return StringHelpers.CheckUrlForPageNumber(Url); }
+      get { return StringHelpers.CheckUrlForPageNumber(Url) || !string.IsNullOrEmpty(FormData) && StringHelpers.CheckUrlForPageNumber(FormData); }
     }
 
     private bool IsUploadMethod()
@@ -104,6 +104,7 @@ namespace BrokenEvent.ProxyDiscovery.Sources
     public Task<string> GetContentAsync(CancellationToken ct, int pageNumber, Action<string> onError)
     {
       Uri uri = GetActualUri(pageNumber);
+      ServicePointManager.Expect100Continue = false;
 
       using (WebClient client = new WebClient())
       {
